@@ -1,5 +1,7 @@
 # Ginnungagap CLI (four-gees CLI)
 
+![Bombastic Side Eyes Cat](bombastic_side_eyes_cat.png)
+
 Let's see what is inside your package.json...
 ---
 
