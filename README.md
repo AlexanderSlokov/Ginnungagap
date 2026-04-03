@@ -10,20 +10,20 @@ Let's see what is inside your package.json...
 I am an Infra guy, a guy that we usually call him "blue-collar servant for the DevOps and Dev teams." 
 
 Most the time I hate `npm` in particular, and the whole JS ecosystem for short. But my dev team is keep using `npm` 
-and force me to run `npm install --no-dev`. Hilariously in the past 6 months, there were 2 major supply chain attack
+and force me to run `npm install --no-dev`. Hilariously in the past 6 months, there were two major supply chain attack
 aim directly to `npm`, the `Shai-Hulud 2.0: The Return` and just right now, near April's fool: `Axios` outbreak. 
 
-I CAN NOT TAKE IT ANYMORE! EVERYTIME I TOUCH JAVASCRIPT, SOMETHING BREAKS, SOMEWHERE!
+I CANNOT TAKE IT ANYMORE! EVERYTIME I TOUCH JAVASCRIPT, SOMETHING BREAKS, SOMEWHERE!
 
 Hence, I came with a conclusion: `npm` is a FLEA MARKET, with nothing to project its supply chain properly.
 
 # Then what? WTF is this?
 
-`Ginnungagap` is a CLI tool that allow you to pre-check if your `npm install` is trying to plant something nasty
+`Ginnungagap` is a CLI tool that allows you to pre-check if your `npm install` is trying to plant something nasty
 inside your computer or not.  
 
-It takes your `package.*` (`.json` and `.lock`), bring it in an isolated container with a bunch of juicy credentials
-that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY,...) 
+It takes your `package.*` (`.json` and `.lock`), bring it to an isolated container with a bunch of juicy credentials
+that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY, ...) 
 `Falco container` will watching `npm` run, and if there is something wrong, `Falco Sidekick` will call out your container
 orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
 submit it to `https://www.npmjs.com` so that they can take action, or yeet it on Reddit and make JS community cry again.
@@ -31,7 +31,7 @@ submit it to `https://www.npmjs.com` so that they can take action, or yeet it on
 # Why do I need it?
 
 Because you are too lazy to READ THE DAMN CVE REPORT before you install an `is-even package` that can "exec" command on your behalf!
-(who even think that package manager should exec script for package???)
+(who even thinks that a package manager should exec script for a package???)
 
 # Installation
 
