@@ -20,7 +20,7 @@ Hence, I came with a conclusion: `npm` is a FLEA MARKET, with nothing to project
 `Ginnungagap` is a CLI tool that allow you to pre-check if your `npm install` is trying to plant something nasty
 inside your computer or not.  
 
-It takes your `package.*` (`.json` and `.lock`), bring it in a isolated container with a bunch of juicy credentials
+It takes your `package.*` (`.json` and `.lock`), bring it in an isolated container with a bunch of juicy credentials
 that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY,...) 
 `Falco container` will watching `npm` run, and if there is something wrong, `Falco Sidekick` will call out your container
 orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
