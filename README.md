@@ -8,8 +8,8 @@ Let's see what is inside your package.json...
 I am an Infra guy, a guy that we usually call him "blue-collar servant for the DevOps and Dev teams." 
 
 Most the time I hate `npm` in particular, and the whole JS ecosystem for short. But my dev team is keep using `npm` 
-and force me to run `npm install --no-dev`, hilariously. In the past 6 months, there were 2 major supply chain attack
-aim directly to `npm`, the `Salam Hulud 2.0` and just right now, near April's fool: `Axios` outbreak. 
+and force me to run `npm install --no-dev`. Hilariously in the past 6 months, there were 2 major supply chain attack
+aim directly to `npm`, the `Shai-Hulud 2.0: The Return` and just right now, near April's fool: `Axios` outbreak. 
 
 I CAN NOT TAKE IT ANYMORE! EVERYTIME I TOUCH JAVASCRIPT, SOMETHING BREAKS, SOMEWHERE!
 
