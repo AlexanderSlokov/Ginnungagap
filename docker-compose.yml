@@ -1,0 +1,65 @@
+# Persist log of Falco and Ginnungagap container
+# For further forensic
+volumes:
+  falco-logs:
+    driver: local
+    name: shared-logs
+
+# A bridge network to isolate Falco and Ginnungagap out
+networks:
+  ginnungagap-net:
+    driver: bridge
+    attachable: false
+
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: sandbox.Dockerfile
+    image: ghcr.io/alexanderslokov/ginnungagap-sandbox:ubuntu-noble-latest
+    volumes:
+      - /path/to/package.json:/app/package.json:ro
+      - /path/to/package.lock:/app/package.lock:ro
+    networks:
+      - ginnungagap-net
+
+  falco:
+    image: falcosecurity/falco:latest
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - /dev:/host/dev
+      - /proc:/host/proc:ro
+      - /boot:/host/boot:ro
+      - /lib/modules:/host/lib/modules:ro
+      - /usr:/host/usr:ro
+      - /etc:/host/etc:ro
+      - falco-logs:/var/log/falco
+    networks:
+      - ginnungagap-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "12m"
+        max-file: "5"
+
+  ginnungagap:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/alexanderslokov/ginnungagap:latest
+    depends_on:
+      - falco
+      - falco-sidekick
+    volumes:
+      - falco-logs:/app/ginnungagap/falco/logs # To parse logs and catch alerts from Falco ASAP
+      - /var/run/docker.sock:/var/run/docker.sock # Need to call Docker socket to pause/commit
+    networks:
+      - ginnungagap-net
+    ports:
+      - "8080:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "12m"
+        max-file: "5"
