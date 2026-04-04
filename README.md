@@ -32,7 +32,7 @@ submit it to `https://www.npmjs.com` so that they can take action, or yeet it on
 Because you are too lazy to READ THE DAMN CVE REPORT before you install an `is-even package` that can "exec" command on your behalf!
 (who even thinks that a package manager should exec script for a package???)
 
-# How does Ginnungagap work?
+# Okay, I am all ears, explain how does Ginnungagap work, seriously:
 
 The architecture of `Ginnungagap` leverages container isolation and cloud-native runtime security to perform dynamic analysis 
 (a.k.a. creating a honeypot) for your `npm` dependencies.
