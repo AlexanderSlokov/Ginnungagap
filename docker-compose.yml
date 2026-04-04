@@ -22,19 +22,21 @@ services:
       - /path/to/package.lock:/app/package.lock:ro
     networks:
       - ginnungagap-net
+    depends_on:
+      - falco
 
   falco:
-    image: falcosecurity/falco:latest
+    image: falcosecurity/falco:0.43.0
     privileged: true
     volumes:
+      - /sys/kernel/tracing:/sys/kernel/tracing:ro
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - /dev:/host/dev
       - /proc:/host/proc:ro
       - /boot:/host/boot:ro
       - /lib/modules:/host/lib/modules:ro
       - /usr:/host/usr:ro
       - /etc:/host/etc:ro
-      - falco-logs:/var/log/falco
+      - ${FALCO_LOGS_VOLUME:-./falco-logs}:/var/log/falco
     networks:
       - ginnungagap-net
     logging:
@@ -50,10 +52,9 @@ services:
     image: ghcr.io/alexanderslokov/ginnungagap:latest
     depends_on:
       - falco
-      - falco-sidekick
     volumes:
-      - falco-logs:/app/ginnungagap/falco/logs # To parse logs and catch alerts from Falco ASAP
-      - /var/run/docker.sock:/var/run/docker.sock # Need to call Docker socket to pause/commit
+      - ${FALCO_LOGS_VOLUME:-./falco-logs}:/var/log/falco # To parse logs and catch alerts from Falco ASAP
+      - /var/run/docker.sock:/var/run/docker.sock         # Need to call Docker socket to pause/commit
     networks:
       - ginnungagap-net
     ports:
