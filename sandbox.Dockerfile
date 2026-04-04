@@ -7,6 +7,9 @@ ARG NVM_VERSION=0.39.7
 ARG PACKAGE_MANAGER=npm
 ARG USER_NAME=helvilette
 
+# Thêm dòng này để truyền ARG vào ENV
+ENV PACKAGE_MANAGER=${PACKAGE_MANAGER}
+
 # A full apt install of Ubuntu Desktop,
 # as close as a real Desktop as possible
 # Add some common "desktop" packages to fool simple anti-sandbox checks
@@ -51,13 +54,13 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/instal
     nvm alias default ${NODE_VERSION} && \
     nvm use default
 
-# Add nvm/node/npm to PATH
+# The problem with 'sh' is it doesn't source ~/.bashrc or understand nvm setup
+# We need to make sure bash is used to run the final command so nvm environment is loaded.
 ENV NVM_DIR="/home/${USER_NAME}/.nvm"
-ENV PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin:$PATH"
 
 # Make the generate_credentials.sh the Entrypoint so it randomizes keys
 # EVERY SINGLE TIME the container is started (not just during build time)
 ENTRYPOINT ["/usr/local/bin/generate_credentials.sh"]
 
-# now, call the npm to install. Notice the fix for ignore-scripts option here:
-CMD ["sh", "-c", "${PACKAGE_MANAGER} install --ignore-scripts false"]
+# Call npm using bash so the NVM environment is properly loaded
+CMD ["/bin/bash", "-c", "source $NVM_DIR/nvm.sh && ${PACKAGE_MANAGER} install"]
