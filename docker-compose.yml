@@ -13,6 +13,7 @@ networks:
 
 services:
   sandbox:
+    container_name: ginnungagap-sandbox
     build:
       context: .
       dockerfile: sandbox.Dockerfile
@@ -27,7 +28,9 @@ services:
 
   falco:
     image: falcosecurity/falco:0.43.0
+    container_name: falco
     privileged: true
+    command: falco -U # <-- BẬT UNBUFFERED OUTPUT ĐỂ LOG NHẢ NGAY LẬP TỨC
     volumes:
       - /sys/kernel/tracing:/sys/kernel/tracing:ro
       - /var/run/docker.sock:/host/var/run/docker.sock
@@ -36,6 +39,8 @@ services:
       - /lib/modules:/host/lib/modules:ro
       - /usr:/host/usr:ro
       - /etc:/host/etc:ro
+      # Ginnungagap's rule to instruct Falco watchs the sandbox
+      - ./falco/fourg_falco_rules.yaml:/etc/falco/falco_rules.local.yaml
       - ${FALCO_LOGS_VOLUME:-./falco-logs}:/var/log/falco
     networks:
       - ginnungagap-net

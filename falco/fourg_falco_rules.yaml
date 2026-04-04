@@ -1,0 +1,50 @@
+# -----------------------------------------------------------------------------------------
+# Danh sách tên các container mà Falco cần theo dõi (được match trong các rule bên dưới)
+# -----------------------------------------------------------------------------------------
+- list: ginnungagap_sandbox_containers
+  items: ["sandbox", "ginnungagap-sandbox"] # Thêm một số tên dự phòng
+
+- rule: Detect Fake Credentials Read
+  desc: Detect when the npm sandbox attempts to read the honeypot credentials
+  condition: >
+    evt.type in (open, openat, openat2) and 
+    (fd.name startswith /home/helvilette/.aws/ or 
+     fd.name startswith /home/helvilette/.kube/ or
+     fd.name startswith /home/helvilette/.ssh/) and
+    container.name in (ginnungagap_sandbox_containers)
+  output: "Malicious read attempt on honeypot credentials (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)"
+  priority: CRITICAL
+  tags: [sandbox, honeypot, supply_chain]
+
+- rule: Detect Network Connections from npm
+  desc: Detect when npm or node attempts to make outbound connections not related to package registry
+  condition: >
+    evt.type in (connect) and 
+    fd.typechar = 4 and 
+    fd.l4proto in (tcp, udp) and
+    (proc.name in (node, npm, sh, bash, curl, wget)) and
+    container.name in (ginnungagap_sandbox_containers)
+  output: "Outbound network connection detected from sandbox (user=%user.name command=%proc.cmdline connection=%fd.name container_id=%container.id image=%container.image.repository)"
+  priority: WARNING
+  tags: [sandbox, network, exfiltration]
+
+- rule: Detect Sensitive Env Var Read
+  desc: Detect when a process dumps environment variables, possibly to steal secrets
+  condition: >
+    evt.type = execve and 
+    proc.name in (env, printenv) and
+    container.name in (ginnungagap_sandbox_containers)
+  output: "Environment variables dumped (user=%user.name command=%proc.cmdline container_id=%container.id image=%container.image.repository)"
+  priority: WARNING
+  tags: [sandbox, info_gathering]
+
+# -----------------------------------------------------------------------------------------
+# Rule debug (Tạm thời) để bắt mọi lệnh được thực thi trong TẤT CẢ các container
+# Chú ý: Rule này RẤT ỒN ÀO, chỉ dùng để test xem Falco có bắt được event của Docker không.
+# -----------------------------------------------------------------------------------------
+#- rule: DEBUG Catch All Executions inside Containers
+#  desc: (Debug) Log every single command executed inside ANY container
+#  condition: evt.type = execve and container.id != host
+#  output: "DEBUG: Command executed in container (command=%proc.cmdline container_id=%container.id image=%container.image.repository container_name=%container.name)"
+#  priority: INFO
+#  tags: [debug]
