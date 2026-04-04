@@ -24,8 +24,7 @@ inside your computer or not.
 
 It takes your `package.*` (`.json` and `.lock`), bring it to an isolated container with a bunch of juicy credentials
 that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY, ...) 
-`Falco container` will watching `npm` run, and if there is something wrong, `Falco Sidekick` will call out your container
-orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
+`Falco` will watching `npm` run, and if there is something wrong, it will print out log that Ginnungagap can parse and order the container orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
 submit it to `https://www.npmjs.com` so that they can take action, or yeet it on Reddit and make JS community cry again.
 
 # Why do I need it?
