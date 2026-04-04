@@ -11,9 +11,11 @@ services:
       context: .
       dockerfile: sandbox.Dockerfile
     image: ghcr.io/alexanderslokov/ginnungagap-sandbox:ubuntu-noble-latest
+    environment:
+      - USER_NAME=helvilette # Truyền biến môi trường này cho script bash nhận diện
     volumes:
-      - /path/to/package.json:/app/package.json:ro
-      - /path/to/package.lock:/app/package.lock:ro
+      - ./sandbox/package.json:/home/helvilette/app/package.json:ro
+      # - /path/to/package.lock:/home/helvilette/app/package.lock:ro
     networks:
       - ginnungagap-net
     depends_on:
