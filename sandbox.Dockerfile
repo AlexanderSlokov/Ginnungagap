@@ -31,22 +31,16 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -s /bin/bash ${USER_NAME} && \
     echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+# Copy the dynamic credentials generator script into the container
+COPY sandbox/generate_credentials.sh /usr/local/bin/generate_credentials.sh
+RUN chmod +x /usr/local/bin/generate_credentials.sh
+
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}/app
 
-# Run the scripts to generate honeypots credentials
-# 1. AWS
-RUN mkdir -p /home/${USER_NAME}/.aws && \
-    echo "[default]\naws_access_key_id = AKIAIOSFODNN7EXAMPLE\naws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" > /home/${USER_NAME}/.aws/credentials
-
-# 2. Kubeconfig
-RUN mkdir -p /home/${USER_NAME}/.kube && \
-    echo "apiVersion: v1\nclusters:\n- cluster:\n    server: https://10.0.0.1:6443\n  name: fake-k8s\ncontexts:\n- context:\n    cluster: fake-k8s\n    user: admin\n  name: default\ncurrent-context: default\nkind: Config\nusers:\n- name: admin\n  user:\n    token: fake-ey-jwt-token-super-secret" > /home/${USER_NAME}/.kube/config
-
-# 3. SSH Keys
-RUN mkdir -p /home/${USER_NAME}/.ssh && \
-    echo "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBA1zK... (FAKE KEY) ...\n-----END OPENSSH PRIVATE KEY-----" > /home/${USER_NAME}/.ssh/id_rsa && \
-    chmod 600 /home/${USER_NAME}/.ssh/id_rsa
+# Run the scripts to generate honeypots credentials DYNAMICALLY
+# By calling the script we just copied
+RUN /usr/local/bin/generate_credentials.sh
 
 # 4. Dummy VS Code config to make it look like a dev machine
 RUN mkdir -p /home/${USER_NAME}/.config/Code/User && \

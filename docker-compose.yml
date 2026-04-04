@@ -1,10 +1,3 @@
-# Persist log of Falco and Ginnungagap container
-# For further forensic
-volumes:
-  falco-logs:
-    driver: local
-    name: shared-logs
-
 # A bridge network to isolate Falco and Ginnungagap out
 networks:
   ginnungagap-net:
@@ -30,7 +23,9 @@ services:
     image: falcosecurity/falco:0.43.0
     container_name: falco
     privileged: true
-    command: falco -U # <-- BẬT UNBUFFERED OUTPUT ĐỂ LOG NHẢ NGAY LẬP TỨC
+    # Turn on UNBUFFERED OUTPUT so we can catch log immediately from Falco
+    # Override log format to JSON, so the control plane can unmarshall it
+    command: falco -U -o json_output=true
     volumes:
       - /sys/kernel/tracing:/sys/kernel/tracing:ro
       - /var/run/docker.sock:/host/var/run/docker.sock
@@ -40,8 +35,7 @@ services:
       - /usr:/host/usr:ro
       - /etc:/host/etc:ro
       # Ginnungagap's rule to instruct Falco watchs the sandbox
-      - ./falco/fourg_falco_rules.yaml:/etc/falco/falco_rules.local.yaml
-      - ${FALCO_LOGS_VOLUME:-./falco-logs}:/var/log/falco
+      - ./falco/falco_rules.local.yaml:/etc/falco/falco_rules.local.yaml
     networks:
       - ginnungagap-net
     logging:
@@ -58,8 +52,7 @@ services:
     depends_on:
       - falco
     volumes:
-      - ${FALCO_LOGS_VOLUME:-./falco-logs}:/var/log/falco # To parse logs and catch alerts from Falco ASAP
-      - /var/run/docker.sock:/var/run/docker.sock         # Need to call Docker socket to pause/commit
+      - /var/run/docker.sock:/var/run/docker.sock # Need to call Docker socket to pause/commit
     networks:
       - ginnungagap-net
     ports:

@@ -18,7 +18,7 @@ Dưới đây là đề xuất các thư viện (packages) cực kỳ chất lư
 * **[archive/tar](https://pkg.go.dev/archive/tar) and [compress/gzip](https://pkg.go.dev/compress/gzip):** Các thư viện standard của Go (không cần cài thêm) để nén thư mục hoặc container filesystem thành `tar.gz` phục vụ cho việc ném lên Reddit hoặc gửi cho npm security team.
 
 ## 4. Giao tiếp với Falco (Monitoring & Triggers)
-* Không nhất thiết phải dùng thư viện phức tạp. Khi Falco phát hiện rủi ro, nó có thể bắn Webhook qua **Falco Sidekick**. Bạn chỉ cần dùng standard `net/http` dựng một server để lắng nghe webhook từ Falco, từ đó trigger lệnh pause Docker thông qua Docker SDK.
+* Thay vì dùng Falco Sidekick làm trung gian gây ra độ trễ, Ginnungagap CLI sẽ đọc/parse trực tiếp stream log hoặc event của Falco. Go cực kỳ mạnh trong việc xử lý I/O và concurrency, nên một goroutine tail log sẽ giải quyết bài toán Race Condition xuất sắc.
 
 ## 5. Tiện ích khác
 * **[Viper](https://github.com/spf13/viper):** Để đọc file cấu hình (`.yaml`, `.json`) hoặc lấy biến môi trường cho tool (ví dụ: cấu hình đường dẫn đến Docker socket, timeout, ...). Thường đi cặp với Cobra.
