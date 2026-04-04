@@ -59,5 +59,5 @@ ENV PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin:$PATH"
 # EVERY SINGLE TIME the container is started (not just during build time)
 ENTRYPOINT ["/usr/local/bin/generate_credentials.sh"]
 
-# now, call the npm to install
-CMD ["sh", "-c", "${PACKAGE_MANAGER} install --ignore-scripts=false"]
+# now, call the npm to install. Notice the fix for ignore-scripts option here:
+CMD ["sh", "-c", "${PACKAGE_MANAGER} install --ignore-scripts false"]

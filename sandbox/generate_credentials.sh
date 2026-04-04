@@ -15,7 +15,8 @@ mkdir -p "${USER_HOME}"
 
 generate_random_string() {
     local length=$1
-    head -c /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w "${length}" | head -n 1
+    # Use awk/tr instead of head to read from /dev/urandom to avoid the "invalid number of bytes" error in some distros
+    tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c "${length}"
 }
 
 # Function to generate random Base64 string
