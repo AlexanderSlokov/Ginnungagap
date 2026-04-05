@@ -73,3 +73,42 @@ Ginnungagap/
 ├── Dockerfile
 └── main.go              # Chỉ đơn giản là gọi cmd.Execute()
 ```
+
+# Làm sao để thắng race condition và bắt sống được mã độc :
+
+## 1. Bỏ qua Docker API, gọi thẳng vào Cgroup Freezer
+Lời gọi docker pause qua HTTP REST API (Docker Socket) mang theo một overhead (độ trễ) rất lớn. 
+Quá trình pause thực chất là việc Linux Kernel sử dụng subsystem freezer của Cgroups.
+
+Giải pháp: Ginnungagap CLI nên tìm ra đường dẫn cgroup của container. 
+Ngay khi Goroutine đọc được cảnh báo từ Falco, thay vì gọi Docker SDK, 
+hãy dùng Go ghi trực tiếp chuỗi FROZEN vào file freezer.state (hoặc cgroup.freeze nếu dùng cgroup v2). 
+Kỹ thuật này cắt giảm gần như toàn bộ độ trễ của Docker Daemon, 
+đóng băng tiến trình ở cấp độ nhân hệ điều hành ngay tắp lự.
+
+## 2. Chuyển từ "Phát hiện" (Detection) sang "Đánh chặn" (Interception) bằng Seccomp BPF
+
+Falco eBPF hiện tại hoạt động theo cơ chế quan sát bất đồng bộ (asynchronous observation), 
+tức là hành động nhạy cảm đã xảy ra rồi Falco mới báo cáo.
+
+Giải pháp: Bọc sandbox container bằng một Seccomp profile có cờ SECCOMP_RET_USER_NOTIF. 
+Kỹ thuật này cho phép Kernel chặn đứng quá trình thực thi của malware ngay trước khi syscall kịp hoàn thành, 
+rồi gửi một tín hiệu (notification) lên cho Ginnungagap Go Daemon ở Userspace.
+
+Kết quả: Malware bị treo cứng hoàn toàn ở trạng thái chờ Kernel phản hồi. 
+Lúc này Ginnungagap có vô tận thời gian để ra lệnh docker pause hoặc snapshot lại bộ nhớ, 
+sau đó từ chối (deny) syscall đó. 
+Kẻ tấn công sẽ bị tóm gọn bộ nhớ (RAM/Heap) cùng toàn bộ payload trước khi lệnh xóa (rm) kịp xuất hiện.
+
+## 3. Tarpitting (Sa lầy): Làm chậm nhận thức thời gian của Malware
+
+Nếu bạn không thể làm tool của mình nhanh hơn mức độ trễ của phần cứng, hãy làm cho malware chạy chậm lại.
+
+Network Throttling: Các malware đánh cắp thông tin (như đọc .aws/credentials) 
+thường phải mở kết nối mạng để tuồn dữ liệu ra ngoài trước khi tự hủy. 
+Hãy dùng lệnh tc (Traffic Control) của Linux để thiết lập độ trễ nhân tạo cho các gói tin outbound 
+xuất phát từ interface của mạng ginnungagap-net. Malware sẽ bị giam chân trong hàm chờ I/O mạng, 
+tạo ra một "cửa sổ thời gian" đủ lớn để luồng Falco + Go gõ búa đóng băng.
+
+CPU / Disk Quotas: Thiết lập giới hạn Cgroup cho CPU và Disk I/O của sandbox ở mức rất nhỏ. 
+Khi tài nguyên bị bóp nghẹt, một đoạn script tự xóa cũng sẽ mất nhiều nhịp CPU clock hơn để hoàn thành.
