@@ -1,4 +1,4 @@
-# Ginnungagap CLI (four-gees CLI)
+# Ginnungagap - Supply Chain Attack Outbreak Investigation Kit
 
 ![Bombastic Side Eyes Cat](docs/images/bombastic_side_eyes_cat.png)
 
@@ -19,13 +19,11 @@ Hence, I came with a conclusion: `npm` is a FLEA MARKET, with nothing to project
 
 # Then what? WTF is this?
 
-`Ginnungagap` is a CLI tool that allows you to pre-check if your `npm install` is trying to plant something nasty
+For JS developers, `Ginnungagap` is a CLI tool that allows you to pre-check if your `npm install` is trying to plant something nasty
 inside your computer or not.  
 
-It takes your `package.*` (`.json` and `.lock`), bring it to an isolated container with a bunch of juicy credentials
-that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY, ...) 
-`Falco` will watching `npm` run, and if there is something wrong, it will print out log that Ginnungagap can parse and order the container orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
-submit it to `https://www.npmjs.com` so that they can take action, or yeet it on Reddit and make JS community cry again.
+For Security Specialists, Ginnungagap is an "Outbreak Investigation Kit" that gives you the abilities to catch malware 
+exploding from supply chain attack of upstream package.
 
 # Why do I need it?
 
