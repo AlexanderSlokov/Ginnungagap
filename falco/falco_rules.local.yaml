@@ -1,17 +1,20 @@
 # -----------------------------------------------------------------------------------------
-# Danh sách tên các container mà Falco cần theo dõi (được match trong các rule bên dưới)
+# Macro để xác định container sandbox (dùng contains để tránh lỗi do Docker Compose prefix)
 # -----------------------------------------------------------------------------------------
-- list: ginnungagap_sandbox_containers
-  items: ["sandbox", "ginnungagap-sandbox"] # Thêm một số tên dự phòng
+- macro: is_ginnungagap_sandbox
+  condition: >
+    (container.name contains "sandbox" or 
+     container.name contains "ginnungagap-sandbox" or
+     container.image.repository contains "ginnungagap-sandbox")
 
 - rule: Detect Fake Credentials Read
   desc: Detect when the npm sandbox attempts to read the honeypot credentials
   condition: >
     evt.type in (open, openat, openat2) and 
-    (fd.name startswith /home/helvilette/.aws/ or 
-     fd.name startswith /home/helvilette/.kube/ or
-     fd.name startswith /home/helvilette/.ssh/) and
-    container.name in (ginnungagap_sandbox_containers)
+    (fd.name contains /.aws/ or 
+     fd.name contains /.kube/ or
+     fd.name contains /.ssh/) and
+    is_ginnungagap_sandbox
   output: "Malicious read attempt on honeypot credentials (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)"
   priority: CRITICAL
   tags: [sandbox, honeypot, supply_chain]
@@ -23,7 +26,7 @@
     fd.typechar = 4 and 
     fd.l4proto in (tcp, udp) and
     (proc.name in (node, npm, sh, bash, curl, wget)) and
-    container.name in (ginnungagap_sandbox_containers)
+    is_ginnungagap_sandbox
   output: "Outbound network connection detected from sandbox (user=%user.name command=%proc.cmdline connection=%fd.name container_id=%container.id image=%container.image.repository)"
   priority: WARNING
   tags: [sandbox, network, exfiltration]
@@ -33,7 +36,7 @@
   condition: >
     evt.type = execve and 
     proc.name in (env, printenv) and
-    container.name in (ginnungagap_sandbox_containers)
+    is_ginnungagap_sandbox
   output: "Environment variables dumped (user=%user.name command=%proc.cmdline container_id=%container.id image=%container.image.repository)"
   priority: WARNING
   tags: [sandbox, info_gathering]

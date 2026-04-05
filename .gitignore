@@ -32,4 +32,4 @@ go.work.sum
 # .vscode/
 
 # Falco log
-falco-logs
+logs

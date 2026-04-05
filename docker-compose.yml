@@ -20,6 +20,7 @@ services:
       - ginnungagap-net
     depends_on:
       - falco
+    # Add cap drop+add và security_opt
 
   falco:
     image: falcosecurity/falco:0.43.0

@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     vim \
     gnupg \
     openssh-client \
+    strace \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # A user name... something that randomly generated, or ask user
@@ -62,5 +63,6 @@ ENV NVM_DIR="/home/${USER_NAME}/.nvm"
 # EVERY SINGLE TIME the container is started (not just during build time)
 ENTRYPOINT ["/usr/local/bin/generate_credentials.sh"]
 
-# Call npm using bash so the NVM environment is properly loaded
+# Call npm using bash so the NVM environment is properly loaded.
+# Gắn strace vào để catch các execve calls.
 CMD ["/bin/bash", "-c", "source $NVM_DIR/nvm.sh && ${PACKAGE_MANAGER} install"]
