@@ -14,7 +14,8 @@
     (fd.name contains /.aws/ or 
      fd.name contains /.kube/ or
      fd.name contains /.ssh/) and
-    is_ginnungagap_sandbox
+    is_ginnungagap_sandbox and
+    not (proc.name in (generate_creden, ssh-keygen))
   output: "Malicious read attempt on honeypot credentials (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)"
   priority: CRITICAL
   tags: [sandbox, honeypot, supply_chain]
@@ -25,7 +26,7 @@
     evt.type in (connect) and 
     fd.typechar = 4 and 
     fd.l4proto in (tcp, udp) and
-    (proc.name in (node, npm, sh, bash, curl, wget)) and
+    (proc.name in (node, sh, bash, curl, wget)) and
     is_ginnungagap_sandbox
   output: "Outbound network connection detected from sandbox (user=%user.name command=%proc.cmdline connection=%fd.name container_id=%container.id image=%container.image.repository)"
   priority: WARNING

@@ -64,5 +64,4 @@ ENV NVM_DIR="/home/${USER_NAME}/.nvm"
 ENTRYPOINT ["/usr/local/bin/generate_credentials.sh"]
 
 # Call npm using bash so the NVM environment is properly loaded.
-# Gắn strace vào để catch các execve calls.
-CMD ["/bin/bash", "-c", "source $NVM_DIR/nvm.sh && ${PACKAGE_MANAGER} install"]
+CMD ["/bin/bash", "-c", "source $NVM_DIR/nvm.sh && ${PACKAGE_MANAGER} install --legacy-peer-deps"]
