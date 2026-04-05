@@ -12,7 +12,7 @@ services:
       dockerfile: sandbox.Dockerfile
     image: ghcr.io/alexanderslokov/ginnungagap-sandbox:ubuntu-noble-latest
     environment:
-      - USER_NAME=helvilette # Truyền biến môi trường này cho script bash nhận diện
+      - USER_NAME=helvilette
     volumes:
       - ./sandbox/package.json:/home/helvilette/app/package.json:ro
       # - /path/to/package.lock:/home/helvilette/app/package.lock:ro
@@ -20,8 +20,18 @@ services:
       - ginnungagap-net
     depends_on:
       - falco
-    # Add cap drop+add và security_opt
-
+    cap_drop:
+      - ALL
+#    cap_add:
+#      - SYS_PTRACE # Bắt buộc phải có để dùng strace cho forensics
+    security_opt:
+      - no-new-privileges:true
+    # Sử dụng Seccomp/AppArmor mặc định của Docker
+#    read_only: true # Chống malware ghi đè vào hệ thống file của container
+#    tmpfs:
+#      - /tmp:mode=1777,size=128M
+#      - /home/helvilette:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
+#      - /home/helvilette/app:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
   falco:
     image: falcosecurity/falco:0.43.0
     container_name: falco
