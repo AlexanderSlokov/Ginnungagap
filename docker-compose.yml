@@ -6,35 +6,34 @@ networks:
 
 services:
   sandbox:
-    container_name: ginnungagap-sandbox
+    container_name: ginnungagap-isolator
     build:
       context: .
-      dockerfile: sandbox.Dockerfile
-    image: ghcr.io/alexanderslokov/ginnungagap-sandbox:ubuntu-noble-latest
+      dockerfile: isolator.Dockerfile
+    image: ghcr.io/alexanderslokov/ginnungagap-isolator:ubuntu-noble-latest
     environment:
-      - USER_NAME=helvilette
+      - USER_NAME=${USER_NAME:-helvilette}
     volumes:
-      - ./sandbox/package.json:/home/helvilette/app/package.json:ro
-      # - /path/to/package.lock:/home/helvilette/app/package.lock:ro
+      - ./isolator/package.json:/home/${USER_NAME:-helvilette}/app/package.json:ro
+      # - /path/to/package.lock:/home/${USER_NAME:-helvilette}/app/package.lock:ro
     networks:
       - ginnungagap-net
     depends_on:
       - falco
     cap_drop:
       - ALL
-#    cap_add:
-#      - SYS_PTRACE # Bắt buộc phải có để dùng strace cho forensics
+    cap_add:
+      - SYS_PTRACE
     security_opt:
       - no-new-privileges:true
-    # Sử dụng Seccomp/AppArmor mặc định của Docker
-#    read_only: true # Chống malware ghi đè vào hệ thống file của container
-#    tmpfs:
-#      - /tmp:mode=1777,size=128M
-#      - /home/helvilette:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
-#      - /home/helvilette/app:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
+    read_only: true # Prevent malware override file system of container
+    tmpfs:
+      - /tmp:mode=1777,size=128M
+      - /home/${USER_NAME:-helvilette}:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
+
   falco:
     image: falcosecurity/falco:0.43.0
-    container_name: falco
+    container_name: ginnungagap-pcr_thermocycler
     privileged: true
     # Turn on UNBUFFERED OUTPUT so we can catch log immediately from Falco
     # Override log format to JSON, so the control plane can unmarshall it
@@ -47,8 +46,8 @@ services:
       - /lib/modules:/host/lib/modules:ro
       - /usr:/host/usr:ro
       - /etc:/host/etc:ro
-      # Ginnungagap's rule to instruct Falco watchs the sandbox
-      - ./falco/falco_rules.local.yaml:/etc/falco/falco_rules.local.yaml
+      # Instruct Falco to watch the isolator
+      - ./pcr_thermocycler/falco_rules.local.yaml:/etc/pcr_thermocycler/falco_rules.local.yaml
     networks:
       - ginnungagap-net
     logging:
@@ -57,7 +56,7 @@ services:
         max-size: "12m"
         max-file: "5"
 
-  ginnungagap:
+  lab:
     build: 
       context: .
       dockerfile: Dockerfile
@@ -68,8 +67,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # Need to call Docker socket to pause/commit
     networks:
       - ginnungagap-net
-    ports:
-      - "8080:8080"
     logging:
       driver: "json-file"
       options:

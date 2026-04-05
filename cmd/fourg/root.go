@@ -10,8 +10,8 @@ import (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "fourg",
-	Short: "Ginnungagap (four-gees) CLI - Dynamic Supply Chain Analysis",
-	Long: `fourg is a CLI tool that runs npm install in an isolated sandbox.
+	Short: "Ginnungagap (four-gees) CLI - Supply Chain Attack Outbreak Investigation Kit",
+	Long: `fourg is a CLI tool that runs npm install in an isolator container.
 It leverages Falco eBPF to detect malicious activities (e.g. reading fake AWS credentials,
 outbound exfiltration) and pauses the container immediately before malware can escape.`,
 	// Uncomment the following line if your bare application

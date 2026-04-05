@@ -1,4 +1,4 @@
-# Ginnungagap CLI (four-gees CLI)
+# Ginnungagap - Supply Chain Attack Outbreak Investigation Kit
 
 ![Bombastic Side Eyes Cat](docs/images/bombastic_side_eyes_cat.png)
 
@@ -19,50 +19,38 @@ Hence, I came with a conclusion: `npm` is a FLEA MARKET, with nothing to project
 
 # Then what? WTF is this?
 
-`Ginnungagap` is a CLI tool that allows you to pre-check if your `npm install` is trying to plant something nasty
-inside your computer or not.  
+`Ginnungagap` is a **Supply Chain Attack Outbreak Investigation Kit** or, on a larger scale, a **Mobile Diagnostic Laboratory ** designed exclusively for the Software Supply Chain.
 
-It takes your `package.*` (`.json` and `.lock`), bring it to an isolated container with a bunch of juicy credentials
-that hackers are dreaming of (Kube config, Terraform .state, AWS credential, or your GEMINI_API_KEY, ...) 
-`Falco` will watching `npm` run, and if there is something wrong, it will print out log that Ginnungagap can parse and order the container orchestrator (Docker / Podman) to pause and commit that container into a `tar.gz`. You can use that `tag.gz` for forensic,
-submit it to `https://www.npmjs.com` so that they can take action, or yeet it on Reddit and make JS community cry again.
-
-# Why do I need it?
-
-Because you are too lazy to READ THE DAMN CVE REPORT before you install an `is-even package` that can "exec" command on your behalf!
-(who even thinks that a package manager should exec script for a package???)
+We apply **Domain-Driven Design (DDD)** to extract technical requirements from real-world preventive medicine systems, transforming them into 1:1 equivalent software constraints. The ultimate goal: **Capture alive, freeze, and sequence the malware's genome** before it can self-destruct or spread.
 
 # Okay, I am all ears, explain how Ginnungagap works, seriously:
 
-The architecture of `Ginnungagap` leverages container isolation and cloud-native runtime security to perform dynamic analysis 
-(a.k.a. creating a honeypot) for your `npm` dependencies.
+The architecture of `Ginnungagap` leverages container isolation and cloud-native runtime security to perform dynamic analysis:
 
-Here is the step-by-step lifecycle when you run `fourg run`:
+### 1. Containment Module (`sandbox` container)
+This is the isolated environment where the malware is executed.
+*   **Isolation Strictness**: Spins up a highly hardened `ubuntu:noble` container.
+*   **Security Controls**: The container is strictly `read_only: true` with all capabilities dropped (`cap_drop: [ALL]`). The internal environment is completely sealed; data can only flow through controlled ports, preventing any escape to the Host.
+*   **Network Throttling**: All outbound network traffic is intentionally throttled (Tarpitting) and monitored through virtual filters, ensuring malicious activities are delayed and trapped.
 
-1. **The Sandbox (`sandbox` container):** 
-   Ginnungagap spins up an isolated, ephemeral Ubuntu container (`ubuntu:noble`). 
-Your local `package.json` and `package-lock.json` are mounted into this container as **Read-Only**. 
-Inside this sandbox, we plant fake "juicy credentials" (like a dummy `.kube/config`, `.aws/credentials`, etc.) 
-to bait malicious post-install scripts. Then, it runs `npm install`.
+### 2. Catalyst/Honeypot Module (`generate_reagents.sh`)
+This module is designed to elicit malicious behavior.
+*   **Dynamic Honeypot**: Before the malicious payload runs, this module injects fake credentials (AWS keys, Kubeconfigs, `.env` secrets) generated randomly at runtime.
+*   **Behavior Elicitation**: These dynamic honeypots force the malware to expose its data theft behaviors so we can capture the activity.
 
-2. **The Watcher (`falco` container):** 
-   While the sandbox is running, an independent Falco container (running with `privileged` mode) monitors the host's kernel using eBPF/Syscall interception. 
-Falco is configured with specific rules to detect suspicious activities generated *only* by the sandbox container. Examples include:
-   - Attempting to read credentials.
-   - Executing obfuscated shell commands (e.g., `base64 -d | sh`).
-   - Making unexpected outbound network connections (e.g., curling a random IP to download a payload or exfiltrate data).
-   - And so on. For short, "ANYTHING THAT A TEXT FILE SHOULD NOT DO".
-   
-   To maximize performance and bypass disk I/O bottlenecks, Falco is configured to run in **unbuffered mode (`-U`)** and outputs pure **JSON alerts directly to its `stdout`**.
+### 3. Behavioral Sequencer (`falco` container)
+Instead of static file scanning, we analyze the runtime behavior of the processes:
+*   **eBPF Tracing**: Hooks directly into the Kernel via Falco to monitor System Calls in real-time.
+*   **Pattern Matching**: The moment a malicious syscall sequence is detected (e.g., `openat` on a sensitive file + `connect` to an unknown IP), the system triggers a JSON alert with ultra-low latency.
 
-3. **The Control Plane (`ginnungagap` CLI/Daemon):** 
-   The Ginnungagap application acts as a high-speed Control Plane written in Go. Instead of relying on intermediate webhooks (like Falco Sidekick) or mounting log files, it **attaches directly to the Docker Socket** (`/var/run/docker.sock`).
-   - It leverages the Docker Engine API to stream Falco's `stdout` in real-time (similar to `docker logs -f`).
-   - A dedicated Goroutine continuously parses the JSON stream.
-   - The precise millisecond it successfully unmarshals a JSON alert indicating a rule violation by the sandbox:
-      - It immediately issues a **`docker pause`** command via the socket, freezing the sandbox container in its tracks before the malware can finish its execution or delete its tracks.
-      - It then runs **`docker commit`** and exports the frozen state into a `.tar.gz` archive (password protected).
-   - Finally, the CLI notifies you with a detailed forensic report, leaving you with the `.tar.gz` artifact to analyze, submit as a CVE, or share with the community.
+### 4. State Freezer & Archiver (`Go Control Plane`)
+When malware is detected, it must be instantly frozen for research:
+*   **Instant Freeze**: The Go CLI daemon intercepts the alert and directly writes to the Linux **Cgroup Freezer**, pausing the container in microseconds to prevent the malware from self-destructing.
+*   **Archiving**: Dumps the entire frozen state of the container into a password-protected `.tar.gz` archive, ensuring a secure Chain of Custody when transferring the artifact for DFIR (Digital Forensics and Incident Response).
+
+### 5. Sanitization Module
+After testing is complete, all traces must be eradicated:
+*   **100% Destruction**: Automatically force-kills, removes containers, and wipes out virtual networks and `tmpfs` volumes. Absolutely no dangling resources are left on the Host.
 
 # Installation
 
