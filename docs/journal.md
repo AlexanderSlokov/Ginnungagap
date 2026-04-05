@@ -86,7 +86,7 @@ hãy dùng Go ghi trực tiếp chuỗi FROZEN vào file freezer.state (hoặc c
 Kỹ thuật này cắt giảm gần như toàn bộ độ trễ của Docker Daemon, 
 đóng băng tiến trình ở cấp độ nhân hệ điều hành ngay tắp lự.
 
-## 2. Chuyển từ "Phát hiện" (Detection) sang "Đánh chặn" (Interception) bằng Seccomp BPF
+## 2. Chuyển từ "Phát hiện" (Detection) sang "Đánh chặn" (Interception) bằng Seccomp BPF (NO IMPLEMENT till we are kernel wizards, Jesus)
 
 Falco eBPF hiện tại hoạt động theo cơ chế quan sát bất đồng bộ (asynchronous observation), 
 tức là hành động nhạy cảm đã xảy ra rồi Falco mới báo cáo.
