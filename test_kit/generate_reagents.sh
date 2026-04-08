@@ -11,15 +11,14 @@
 set -e
 
 USER_HOME="/home/${USER_NAME:-dev}"
-mkdir -p "${USER_HOME}"
+# Create user home (if not already there due to tmpfs) and app dir
+mkdir -p "${USER_HOME}/app"
 
-# Since the container is read-only but has a tmpfs at $USER_HOME, Docker
-# might have created some mount points (like for package.json) as root.
-# We need to ensure we own the home directory and the app directory.
-sudo chown "$(id -u):$(id -g)" "${USER_HOME}"
-# Create app dir if it doesn't exist and ensure we own it (it might be a mount point)
-sudo mkdir -p "${USER_HOME}/app"
-sudo chown "$(id -u):$(id -g)" "${USER_HOME}/app"
+# Copy the package.json from template to the writable app dir
+if [ -f /opt/package.json.template ]; then
+    cp /opt/package.json.template "${USER_HOME}/app/package.json"
+fi
+cd "${USER_HOME}/app"
 
 generate_random_string() {
     local length=$1
