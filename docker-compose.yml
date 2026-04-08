@@ -5,7 +5,7 @@ networks:
     attachable: false
 
 services:
-  sandbox:
+  isolator:
     container_name: ginnungagap-isolator
     build:
       context: .

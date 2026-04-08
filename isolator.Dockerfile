@@ -37,7 +37,7 @@ RUN useradd -m -s /bin/bash ${USER_NAME} && \
     echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Copy the dynamic credentials generator script into the container
-COPY test_kit/generate_reagents.sh /usr/local/bin/generate_credentials.sh
+COPY test_kit/generate_reagents.sh /usr/local/bin/generate_reagents.sh
 RUN chmod +x /usr/local/bin/generate_reagents.sh
 
 USER ${USER_NAME}
@@ -61,7 +61,7 @@ ENV NVM_DIR="/home/${USER_NAME}/.nvm"
 
 # Make the generate_reagents.sh the Entrypoint so it randomizes keys
 # EVERY SINGLE TIME the container is started (not just during build time)
-ENTRYPOINT ["/usr/local/bin/generate_credentials.sh"]
+ENTRYPOINT ["/usr/local/bin/generate_reagents.sh"]
 
 # Call npm using bash so the NVM environment is properly loaded.
 CMD ["/bin/bash", "-c", "source $NVM_DIR/nvm.sh && ${PACKAGE_MANAGER} install --legacy-peer-deps"]
