@@ -13,12 +13,27 @@
     evt.type in (open, openat, openat2) and 
     (fd.name contains /.aws/ or 
      fd.name contains /.kube/ or
-     fd.name contains /.ssh/) and
+     fd.name contains /.ssh/ or
+     fd.name contains /.config/gcloud/ or
+     fd.name contains /.npmrc/ or
+     fd.name contains /terraform.tfstate/) and
     is_ginnungagap_sandbox and
-    not (proc.name in (generate_creden, ssh-keygen))
+    not (proc.name in (generate_reagen, generate_creden, ssh-keygen))
   output: "Malicious read attempt on honeypot credentials (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id image=%container.image.repository)"
   priority: CRITICAL
   tags: [isolator, honeypot, supply_chain]
+
+- rule: Detect Anti-Sandbox Fingerprinting
+  desc: Detect when a process attempts to read system files to identify container/sandbox environment
+  condition: >
+    evt.type in (open, openat, openat2) and 
+    (fd.name in (/proc/mounts, /proc/self/mountinfo, /proc/self/cgroup, /.dockerenv) or
+     fd.name contains "kubernetes.io/serviceaccount") and
+    is_ginnungagap_sandbox and
+    not (proc.name in (generate_reagen, ps, top, free))
+  output: "Anti-Sandbox Fingerprinting detected (user=%user.name command=%proc.cmdline file=%fd.name container_id=%container.id)"
+  priority: HIGH
+  tags: [isolator, anti_sandbox, evasion]
 
 - rule: Detect Network Connections from npm
   desc: Detect when npm or node attempts to make outbound connections not related to package registry

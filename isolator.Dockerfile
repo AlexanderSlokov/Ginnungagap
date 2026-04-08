@@ -10,7 +10,7 @@ ARG USER_NAME=helvilette
 ENV PACKAGE_MANAGER=${PACKAGE_MANAGER}
 ENV NVM_VERSION=${NVM_VERSION}
 ENV NODE_VERSION=${NODE_VERSION}
-ENV USER_NAME=${PACKAGE_MANAGER}
+ENV USER_NAME=${USER_NAME}
 
 # A full apt install of Ubuntu Desktop, as close as a real Desktop as possible.
 # Add some common "desktop" packages to fool simple anti-sandbox checks.
@@ -47,9 +47,12 @@ WORKDIR /home/${USER_NAME}/app
 RUN mkdir -p /home/${USER_NAME}/.config/Code/User && \
     echo "{ \"editor.formatOnSave\": true }" > /home/${USER_NAME}/.config/Code/User/settings.json
 
+# Move NVM to /opt/nvm so it is not masked by tmpfs on /home/${USER_NAME} at runtime
+ENV NVM_DIR="/opt/nvm"
+RUN sudo mkdir -p ${NVM_DIR} && sudo chown ${USER_NAME}:${USER_NAME} ${NVM_DIR}
+
 # Call nvm to install the destinated node version
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash && \
-    export NVM_DIR="/home/${USER_NAME}/.nvm" && \
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
     nvm install ${NODE_VERSION} && \
     nvm alias default ${NODE_VERSION} && \
@@ -57,7 +60,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/instal
 
 # The problem with 'sh' is it doesn't source ~/.bashrc or understand nvm setup
 # We need to make sure bash is used to run the final command so nvm environment is loaded.
-ENV NVM_DIR="/home/${USER_NAME}/.nvm"
+# (NVM_DIR is already set above)
 
 # Make the generate_reagents.sh the Entrypoint so it randomizes keys
 # EVERY SINGLE TIME the container is started (not just during build time)

@@ -13,6 +13,14 @@ set -e
 USER_HOME="/home/${USER_NAME:-dev}"
 mkdir -p "${USER_HOME}"
 
+# Since the container is read-only but has a tmpfs at $USER_HOME, Docker
+# might have created some mount points (like for package.json) as root.
+# We need to ensure we own the home directory and the app directory.
+sudo chown "$(id -u):$(id -g)" "${USER_HOME}"
+# Create app dir if it doesn't exist and ensure we own it (it might be a mount point)
+sudo mkdir -p "${USER_HOME}/app"
+sudo chown "$(id -u):$(id -g)" "${USER_HOME}/app"
+
 generate_random_string() {
     local length=$1
     # Use awk/tr instead of head to read from /dev/urandom to avoid the "invalid number of bytes" error in some distros
