@@ -19,10 +19,8 @@ services:
       - SYS_PTRACE
     security_opt:
       - no-new-privileges:true
-    read_only: true
     tmpfs:
       - /tmp:mode=1777,size=256M
-      - /home/${USER_NAME:-helvilette}:mode=1777,size=10240M,uid=1000,gid=1000
     volumes:
       - ./isolator/package.json:/opt/package.json.template:ro
     networks:

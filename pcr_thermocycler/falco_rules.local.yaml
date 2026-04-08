@@ -1,3 +1,5 @@
+- required_engine_version: 0.57.0
+
 # -----------------------------------------------------------------------------------------
 # Macro để xác định container isolator (dùng contains để tránh lỗi do Docker Compose prefix)
 # -----------------------------------------------------------------------------------------
@@ -61,9 +63,9 @@
 # Rule debug (Tạm thời) để bắt mọi lệnh được thực thi trong TẤT CẢ các container
 # Chú ý: Rule này RẤT ỒN ÀO, chỉ dùng để test xem Falco có bắt được event của Docker không.
 # -----------------------------------------------------------------------------------------
-#- rule: DEBUG Catch All Executions inside Containers
-#  desc: (Debug) Log every single command executed inside ANY container
-#  condition: evt.type = execve and container.id != host
-#  output: "DEBUG: Command executed in container (command=%proc.cmdline container_id=%container.id image=%container.image.repository container_name=%container.name)"
-#  priority: INFO
-#  tags: [debug]
+- rule: DEBUG Catch All Executions inside Containers
+  desc: (Debug) Log every single command executed inside ANY container
+  condition: evt.type = execve and container.id != host
+  output: "DEBUG: Command executed in container (command=%proc.cmdline container_id=%container.id image=%container.image.repository container_name=%container.name)"
+  priority: INFO
+  tags: [debug]
