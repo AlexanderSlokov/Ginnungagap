@@ -13,29 +13,22 @@ services:
     image: ghcr.io/alexanderslokov/ginnungagap-isolator:ubuntu-noble-latest
     environment:
       - USER_NAME=${USER_NAME:-helvilette}
-    volumes:
-      - ./isolator/package.json:/opt/package.json.template:ro
-      - type: tmpfs
-        target: /tmp
-        tmpfs:
-          size: 134217728
-          mode: 1777
-      - type: tmpfs
-        target: /home/${USER_NAME:-helvilette}
-        tmpfs:
-          size: 134217728
-          mode: 1777
-    networks:
-      - ginnungagap-net
-    depends_on:
-      - falco
     cap_drop:
       - ALL
     cap_add:
       - SYS_PTRACE
     security_opt:
       - no-new-privileges:true
-    read_only: true # Prevent malware override file system of container
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=256M
+      - /home/${USER_NAME:-helvilette}:mode=1777,size=10240M,uid=1000,gid=1000
+    volumes:
+      - ./isolator/package.json:/opt/package.json.template:ro
+    networks:
+      - ginnungagap-net
+    depends_on:
+      - falco
 
   falco:
     image: falcosecurity/falco:0.43.0

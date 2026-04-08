@@ -33,7 +33,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # A user name... something that randomly generated, or ask user to import their real username (for fun)
-RUN useradd -m -s /bin/bash ${USER_NAME} && \
+RUN userdel -r ubuntu || true && \
+    useradd -m -s /bin/bash -u 1000 ${USER_NAME} && \
     echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Copy the dynamic credentials generator script into the container
@@ -41,7 +42,7 @@ COPY test_kit/generate_reagents.sh /usr/local/bin/generate_reagents.sh
 RUN chmod +x /usr/local/bin/generate_reagents.sh
 
 USER ${USER_NAME}
-WORKDIR /home/${USER_NAME}/app
+WORKDIR /home/${USER_NAME}
 
 # Dummy VS Code config to make it look like a dev machine
 RUN mkdir -p /home/${USER_NAME}/.config/Code/User && \
