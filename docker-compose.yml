@@ -5,7 +5,7 @@ networks:
     attachable: false
 
 services:
-  sandbox:
+  isolator:
     container_name: ginnungagap-isolator
     build:
       context: .
@@ -13,23 +13,20 @@ services:
     image: ghcr.io/alexanderslokov/ginnungagap-isolator:ubuntu-noble-latest
     environment:
       - USER_NAME=${USER_NAME:-helvilette}
-    volumes:
-      - ./isolator/package.json:/home/${USER_NAME:-helvilette}/app/package.json:ro
-      # - /path/to/package.lock:/home/${USER_NAME:-helvilette}/app/package.lock:ro
-    networks:
-      - ginnungagap-net
-    depends_on:
-      - falco
     cap_drop:
       - ALL
     cap_add:
       - SYS_PTRACE
     security_opt:
       - no-new-privileges:true
-    read_only: true # Prevent malware override file system of container
     tmpfs:
-      - /tmp:mode=1777,size=128M
-      - /home/${USER_NAME:-helvilette}:mode=1777,size=256M # Cho phép npm ghi vào home nhưng chỉ ở RAM
+      - /tmp:mode=1777,size=256M
+    volumes:
+      - ./isolator/package.json:/opt/package.json.template:ro
+    networks:
+      - ginnungagap-net
+    depends_on:
+      - falco
 
   falco:
     image: falcosecurity/falco:0.43.0
