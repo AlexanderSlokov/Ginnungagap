@@ -131,6 +131,12 @@ Use them. Do not add a new color, font, or component style for one page.
   `hx-boost` on `<body>` makes the navigation fast. Add other `htmx` attributes only if a form cannot do the task.
 - Use `hx-confirm` for an action that removes data, such as purge or delete.
 - Do not load files from a CDN. The Go binary embeds all static files.
+- htmx is a vendored file: `internal/web/static/htmx-<version>.min.js`.
+  `internal/web/vendor.txt` records its version, SHA-256, and source.
+  Do not edit, replace, or download this file by hand.
+  To change the version, run `scripts/update-htmx.sh <version>`.
+  The script checks the npm integrity hash, replaces the file, updates `vendor.txt` and the `<script>` tag, and runs `templ generate`.
+- Before you update htmx, read its changelog. A new major version (for example, 4.x) needs an ADR.
 
 ### Colors (Nord, light theme)
 

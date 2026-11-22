@@ -48,7 +48,7 @@ func layout(title string, who *auth.Principal) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Ginnungagap</title><link rel=\"stylesheet\" href=\"/static/style.css\"><script src=\"/static/htmx.min.js\" defer></script></head><body hx-boost=\"true\"><header class=\"bar\"><a class=\"brand\" href=\"/\"><span class=\"mark\">G</span>GINNUNGAGAP</a> <span class=\"tag\">PACKAGE PROXY · v0.1</span> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Ginnungagap</title><link rel=\"stylesheet\" href=\"/static/style.css\"><script src=\"/static/htmx-2.0.11.min.js\" defer></script></head><body hx-boost=\"true\"><header class=\"bar\"><a class=\"brand\" href=\"/\"><span class=\"mark\">G</span>GINNUNGAGAP</a> <span class=\"tag\">PACKAGE PROXY · v0.1</span> ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
