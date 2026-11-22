@@ -22,7 +22,7 @@ The schema has these tables:
 | `repository` | One row for each repository: name, format (`pypi`), type (`proxy` or `group`), and the members of a group in priority order. |
 | `upstream`   | The upstream index URL of a proxy repository.                            |
 | `project`    | One row for each package name in a repository. It records the upstream that supplies this name (refer to [ADR-0008](0008-pypi-upstream-and-cooldown.md)). |
-| `file`       | One row for each artifact file: file name, version, SHA-256, size, upstream URL, upload time, first-seen time, blob key, last pull time, pin flag, and GC mark time. |
+| `file`       | One row for each artifact file: file name, version, SHA-256, size, upstream URL, upload time, first-seen time, cached flag, last pull time, pin flag, and GC mark time. |
 | `pull_log`   | One row for each download: file, user or robot account, time.            |
 | `policy`     | Blocklist and allowlist rules, and cooldown overrides.                    |
 | `account`    | Local user accounts and their role on each repository. (`user` is a reserved word in PostgreSQL.) |

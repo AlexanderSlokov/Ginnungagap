@@ -17,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/AlexanderSlokov/Ginnungagap/internal/config"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/store"
 )
 
 func main() {
@@ -39,6 +40,9 @@ func run() error {
 		return err
 	}
 	defer db.Close()
+	if err := store.Migrate(ctx, db); err != nil {
+		return err
+	}
 
 	s3, err := minio.New(cfg.S3Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.S3AccessKey, cfg.S3SecretKey, ""),

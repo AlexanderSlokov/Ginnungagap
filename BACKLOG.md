@@ -7,28 +7,12 @@ When a task is complete, remove it from this file and record the result in `CHAN
 
 The ADRs for this phase are accepted: ADR-0003 to ADR-0008 in `docs/explanation/adr/`.
 
-### Storage
-
-#### B2: Blob storage on S3
-
-- **Files:** `internal/blob/`.
-- **Dependencies:** None (B1 is complete).
-- **Goal:** The service can put, get (as a stream), check, and delete a blob by its SHA-256 key on any S3-compatible endpoint.
-  A test runs against the SeaweedFS container.
-
-#### B3: Metadata migrations
-
-- **Files:** `internal/store/`, `internal/store/migrations/`.
-- **Dependencies:** None (B1 is complete).
-- **Goal:** At start, the service applies the migrations for the tables of ADR-0003.
-  A second start makes no change.
-
 ### PyPI proxy
 
 #### B4: PyPI Simple API proxy
 
 - **Files:** `internal/pypi/`.
-- **Dependencies:** B2, B3.
+- **Dependencies:** None (B1 to B3 are complete).
 - **Goal:**
   - The proxy serves the Simple API (PEP 503 HTML and PEP 691 JSON) for proxy and group repositories.
   - It reads JSON and HTML from upstreams. It reads `upload-time` and `data-upload-time` (ADR-0008).
@@ -57,7 +41,7 @@ The ADRs for this phase are accepted: ADR-0003 to ADR-0008 in `docs/explanation/
 #### B7: Garbage collection
 
 - **Files:** `internal/gc/`, `internal/jobs/`.
-- **Dependencies:** B3, B6.
+- **Dependencies:** B6.
 - **Goal:** The mark job and the sweep job follow ADR-0005.
   Tests show that a pinned file and a file that another row refers to are not removed.
 
@@ -66,7 +50,7 @@ The ADRs for this phase are accepted: ADR-0003 to ADR-0008 in `docs/explanation/
 #### B8: Accounts, roles, and robot tokens
 
 - **Files:** `internal/auth/`, `internal/store/migrations/`.
-- **Dependencies:** B3.
+- **Dependencies:** None (B3 is complete).
 - **Goal:** Each request checks the role of ADR-0006 on the repository.
   `pip` and `uv` can authenticate with HTTP basic authentication.
   The system keeps only a hash of each robot token. It shows the token one time only.

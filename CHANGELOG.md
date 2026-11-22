@@ -9,6 +9,8 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Go service skeleton and a Docker Compose stack with PostgreSQL, SeaweedFS (S3), and Valkey. Copy `.env.example` to `.env`, then run `docker compose up`. `GET /healthz` returns `200` only when all three services are reachable.
+- Blob storage on any S3-compatible endpoint. The key of a blob is its SHA-256. A blob with the wrong content is never visible.
+- PostgreSQL schema for repositories, packages, files, accounts, robot accounts, roles, pull history, and policies. The service applies new migrations at start.
 - ADR-0003 to ADR-0008: metadata schema, job queue, garbage collection, roles, web UI, and PyPI upstream resolution with a 14-day default cooldown.
 
 ### Changed
