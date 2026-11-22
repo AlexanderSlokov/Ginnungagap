@@ -36,7 +36,13 @@ The system gets the upload time of a file in this order:
 
 1. `upload-time` in the JSON Simple API.
 2. `data-upload-time` in the HTML Simple API.
-3. The first-seen time: the time when the proxy sees the file for the first time.
+3. The earliest upload time of another file with the same SHA-256, from any upstream.
+   The same SHA-256 means the same content.
+   For example, the PyTorch index mirrors some PyPI files without an upload time.
+4. The first-seen time: the time when the proxy sees the file for the first time.
+
+> **Amendment (2026-11-22, B4):** Step 3 is new.
+> The end-to-end test showed that the PyTorch index gives no upload time for mirrored PyPI files.
 
 ### 2.3 Cooldown
 
