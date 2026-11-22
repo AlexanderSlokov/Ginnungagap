@@ -2,7 +2,7 @@ services:
   ginnungagap:
     build: .
     ports:
-      - "8080:8080"
+      - "${GINNUNGAGAP_PORT:-8080}:8080"
     environment:
       DATABASE_URL: postgres://ginnungagap:${POSTGRES_PASSWORD:?}@postgres:5432/ginnungagap
       S3_ENDPOINT: seaweedfs:8333
@@ -10,6 +10,8 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:?}
       S3_BUCKET: ginnungagap
       VALKEY_ADDR: valkey:6379
+      GINNUNGAGAP_ADMIN_PASSWORD: ${GINNUNGAGAP_ADMIN_PASSWORD:-}
+      GC_STORAGE_LIMIT: ${GC_STORAGE_LIMIT:-}
     depends_on:
       postgres:
         condition: service_healthy

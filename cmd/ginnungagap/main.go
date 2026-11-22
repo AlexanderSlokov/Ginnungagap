@@ -16,8 +16,14 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/AlexanderSlokov/Ginnungagap/internal/auth"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/blob"
 	"github.com/AlexanderSlokov/Ginnungagap/internal/config"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/gc"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/jobs"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/pypi"
 	"github.com/AlexanderSlokov/Ginnungagap/internal/store"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/web"
 )
 
 func main() {
@@ -43,6 +49,15 @@ func run() error {
 	if err := store.Migrate(ctx, db); err != nil {
 		return err
 	}
+	var adminHash string
+	if cfg.AdminPassword != "" {
+		if adminHash, err = auth.HashPassword(cfg.AdminPassword); err != nil {
+			return err
+		}
+	}
+	if err := store.Bootstrap(ctx, db, "admin", adminHash); err != nil {
+		return err
+	}
 
 	s3, err := minio.New(cfg.S3Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.S3AccessKey, cfg.S3SecretKey, ""),
@@ -51,9 +66,24 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	blobs := blob.New(s3, cfg.S3Bucket)
 
 	valkey := redis.NewClient(&redis.Options{Addr: cfg.ValkeyAddr})
 	defer valkey.Close()
+
+	authn, err := auth.New(ctx, db)
+	if err != nil {
+		return err
+	}
+	queue := jobs.NewClient(cfg.ValkeyAddr)
+	defer queue.Close()
+	collector := &gc.GC{DB: db, Blob: blobs, Limit: cfg.StorageLimit, Grace: gc.Grace}
+	go func() {
+		if err := jobs.Run(ctx, cfg.ValkeyAddr, collector); err != nil {
+			slog.Error("job worker stopped", "err", err)
+			stop()
+		}
+	}()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -67,8 +97,15 @@ func run() error {
 		}
 		w.Write([]byte("ok\n"))
 	})
+	(&pypi.Proxy{DB: db, Blob: blobs, Auth: authn, Client: pypi.NewClient()}).Register(mux)
+	(&web.UI{DB: db, Blob: blobs, Auth: authn, Jobs: queue, StorageLimit: cfg.StorageLimit}).Register(mux)
 
-	srv := &http.Server{Addr: cfg.Listen, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{
+		Addr: cfg.Listen,
+		// Reject cross-origin form posts to the UI (CSRF). Requests from pip and uv are not affected.
+		Handler:           http.NewCrossOriginProtection().Handler(mux),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
