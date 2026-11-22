@@ -7,29 +7,19 @@ When a task is complete, remove it from this file and record the result in `CHAN
 
 The ADRs for this phase are accepted: ADR-0003 to ADR-0008 in `docs/explanation/adr/`.
 
-### Build and deployment
-
-#### B1: Go module, configuration, and Docker Compose stack
-
-- **Files:** `go.mod`, `go.sum`, `cmd/ginnungagap/main.go`, `internal/config/`, `compose.yaml`, `Dockerfile`, `.env.example`.
-- **Dependencies:** None.
-- **Goal:** `docker compose up` starts PostgreSQL, SeaweedFS (S3 endpoint), Valkey, and Ginnungagap.
-  Ginnungagap reads its configuration from environment variables.
-  `GET /healthz` returns `200` only when PostgreSQL, S3, and Valkey are reachable.
-
 ### Storage
 
 #### B2: Blob storage on S3
 
 - **Files:** `internal/blob/`.
-- **Dependencies:** B1.
+- **Dependencies:** None (B1 is complete).
 - **Goal:** The service can put, get (as a stream), check, and delete a blob by its SHA-256 key on any S3-compatible endpoint.
   A test runs against the SeaweedFS container.
 
 #### B3: Metadata migrations
 
 - **Files:** `internal/store/`, `internal/store/migrations/`.
-- **Dependencies:** B1.
+- **Dependencies:** None (B1 is complete).
 - **Goal:** At start, the service applies the migrations for the tables of ADR-0003.
   A second start makes no change.
 
@@ -59,7 +49,7 @@ The ADRs for this phase are accepted: ADR-0003 to ADR-0008 in `docs/explanation/
 #### B6: Job queue and worker
 
 - **Files:** `internal/jobs/`, `cmd/ginnungagap/main.go`.
-- **Dependencies:** B1.
+- **Dependencies:** None (B1 is complete).
 - **Goal:** The service runs asynq on Valkey (ADR-0004).
   It runs periodic jobs.
   A test runs a job against the Valkey container.

@@ -1,0 +1,60 @@
+services:
+  ginnungagap:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://ginnungagap:${POSTGRES_PASSWORD:?}@postgres:5432/ginnungagap
+      S3_ENDPOINT: seaweedfs:8333
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+      S3_BUCKET: ginnungagap
+      VALKEY_ADDR: valkey:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_started
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ginnungagap
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ginnungagap
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "ginnungagap"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.54
+    command: ["mini", "-dir=/data", "-bucket=ginnungagap"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:?}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:?}
+    volumes:
+      - seaweedfs:/data
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:9-alpine
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - valkey:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres:
+  seaweedfs:
+  valkey:

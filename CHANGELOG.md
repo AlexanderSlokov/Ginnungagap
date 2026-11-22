@@ -6,6 +6,11 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Go service skeleton and a Docker Compose stack with PostgreSQL, SeaweedFS (S3), and Valkey. Copy `.env.example` to `.env`, then run `docker compose up`. `GET /healthz` returns `200` only when all three services are reachable.
+- ADR-0003 to ADR-0008: metadata schema, job queue, garbage collection, roles, web UI, and PyPI upstream resolution with a 14-day default cooldown.
+
 ### Changed
 
 - Ginnungagap is now a pull-through proxy and cache for software packages ([ADR-0001](docs/explanation/adr/0001-rebuild-as-package-proxy.md)). The old malware investigation kit is stopped.
