@@ -109,3 +109,79 @@ shortcut: <what is this?>
 1. Use the `Diátaxis` framework to organize documents in the `docs/` directory.
 2. Follow the `ASD-STE100` aerospace standard for all technical documents.
    This rule applies to all `.md` files.
+
+## How to Design the Web UI
+
+[ADR-0007](docs/explanation/adr/0007-web-ui.md) is the source of these rules.
+`internal/web/static/style.css` holds the tokens and the components.
+Use them. Do not add a new color, font, or component style for one page.
+
+### Direction
+
+- The style is industrial and neo-brutalism, with the clean look of e-ink.
+- The UI is a tool for daily work. Show data first. Do not add decoration.
+- The mood reference is the interface of the game *Arknights: Endfield*.
+  Do not copy its logos, fonts, icons, or images.
+
+### Technology
+
+- Write pages as `templ` components in `internal/web/views.templ`.
+- After you change a `.templ` file, run `go tool templ generate`. Commit the generated `*_templ.go` files.
+- Use plain forms with `method="post"` and a redirect (status `303`) after the post.
+  `hx-boost` on `<body>` makes the navigation fast. Add other `htmx` attributes only if a form cannot do the task.
+- Use `hx-confirm` for an action that removes data, such as purge or delete.
+- Do not load files from a CDN. The Go binary embeds all static files.
+
+### Colors (Nord, light theme)
+
+| Token          | Color     | Use                                           |
+|----------------|-----------|-----------------------------------------------|
+| `--bg`         | `#ECEFF4` | Page and panel background                     |
+| `--surface`    | `#E5E9F0` | Stat tiles, code blocks, row hover            |
+| `--surface-2`  | `#D8DEE9` | Table row lines, button hover                 |
+| `--line`       | `#2E3440` | Borders, hard shadows, header bar             |
+| `--text`       | `#2E3440` | Body text                                     |
+| `--text-muted` | `#4C566A` | Secondary text                                |
+| `--accent`     | `#EBCB8B` | Primary buttons, header stripe, focus outline, meters |
+| `--info`       | `#88C0D0` | Fill: override, pinned                        |
+| `--ok`         | `#A3BE8C` | Fill: visible, allowed, cached                |
+| `--warn`       | `#D08770` | Fill: cooldown, GC marked                     |
+| `--danger`     | `#BF616A` | Borders and markers only: blocked, removed, errors |
+| `--violet`     | `#B48EAD` | Fill: yanked                                  |
+
+Contrast rules (WCAG 2.2 level AA):
+
+- Write text only in `--text` or `--text-muted`.
+- Do not write text in an accent color on a light background. These pairs fail AA.
+- Put dark text (`--text`) on an accent fill.
+- Use `--danger` only for borders, markers, and shadows. Put the label in `--text`.
+
+### Shape and type
+
+- Borders: `2px solid var(--line)` (`--border`). Corners are square. Do not use `border-radius`.
+- Shadows: hard offset shadows only, `4px 4px 0 var(--line)` (`--shadow`). Do not use blur.
+- Do not use gradients, transparency effects, or animations.
+  The only motion is the button press: it moves 2px and loses its shadow.
+- Headings, labels, badges, buttons, and numbers use the monospace font (`--mono`), in uppercase with wide letter spacing.
+- Body text uses the sans font (`--sans`).
+- Numbers in tables align right (`.num`).
+
+### Components
+
+| Class                    | Use                                                                |
+|--------------------------|--------------------------------------------------------------------|
+| `.bar`                   | Header: dark bar with a 6px accent stripe at the bottom.           |
+| `.panel` with `@section` | One block of content. The title has a numbered code tag, for example `01`. |
+| `.stats`, `.stat`        | Stat tiles with `.label`, `.value`, `.hint`, and an optional `.meter`. |
+| `table`                  | Data lists. Use `.status-*` on a row for a colored marker on the left edge. |
+| `.badge`, `.badge-*`     | Status labels. Use the `@statusBadge` component for a policy status. |
+| `.alert`, `.alert-danger`, `.alert-accent` | Messages. Use `.alert-accent` for a one-time secret, such as a robot token. |
+| `.primary`               | The main action of a form. Use one for each form.                  |
+| `button.small`           | Row actions in a table.                                            |
+| `.stack`, `.inline-form` | Form layouts: vertical, or one wrapped row.                        |
+
+### Text in the UI
+
+- Write UI text in ASD-STE100: short sentences, active voice, one instruction in each sentence.
+- An empty state tells the user what to do next. For example: "No packages yet. A package appears here after the first request."
+- An error message tells the user the cause and the necessary role or value.
