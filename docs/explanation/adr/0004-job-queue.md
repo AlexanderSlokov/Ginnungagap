@@ -32,3 +32,5 @@ The database keeps data. The queue keeps jobs.
   but asynq does not state official support for Valkey (issue [#985](https://github.com/hibiken/asynq/issues/985)).
   The end-to-end test must run asynq against a Valkey container.
 - If asynq fails with Valkey, write a new ADR.
+
+> **Result (2026-11-22, B6):** `internal/jobs/jobs_test.go` runs a job with asynq v0.26.0 on Valkey 9.2. The test passes.

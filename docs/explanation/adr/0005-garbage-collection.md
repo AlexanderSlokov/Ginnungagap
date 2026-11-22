@@ -29,7 +29,12 @@ The rules must prevent this type of error.
 - The sweep job removes a blob only if all these conditions are true:
   1. The mark is older than the grace period.
   2. No unmarked `file` row refers to the blob.
-- Then the sweep job removes the marked `file` rows.
+- Then the sweep job sets the `file` row to "not cached". It keeps the row.
+
+> **Amendment (2026-11-22, B7):** The first text said "removes the marked `file` rows".
+> The row keeps the first-seen time (for the cooldown, ADR-0008) and the pull history.
+> If the sweep removes the row, the cooldown of a file without an upload time starts again,
+> and the pull history of the file is lost.
 - The grace period is 24 hours.
 
 ### 2.3 Schedule
