@@ -31,6 +31,47 @@ but it does not let you see or control what it keeps.
   An operator can remove or block a version.
 - **Access control.** Each user gets a role on a repository. CI uses robot accounts.
 
+## Quick start
+
+1. Copy the example configuration, then change the passwords in `.env`:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+2. Start the stack:
+
+   ```sh
+   docker compose up -d --build
+   ```
+
+3. Open <http://localhost:8080> and log in as `admin` with `GINNUNGAGAP_ADMIN_PASSWORD`.
+
+4. Install a package through the proxy:
+
+   ```sh
+   pip install --index-url http://admin:PASSWORD@localhost:8080/pypi/python/simple/ six
+   ```
+
+On the first start, Ginnungagap creates three repositories:
+
+| Repository | Type  | Upstream                                  |
+|------------|-------|-------------------------------------------|
+| `pypi`     | proxy | `https://pypi.org/simple`                 |
+| `pytorch`  | proxy | `https://download.pytorch.org/whl/cu128`  |
+| `python`   | group | `pypi`, then `pytorch`. `torch`, `torchvision`, and `torchaudio` route to `pytorch`. |
+
+> New versions are hidden for 14 days (the cooldown).
+> To get a newer version now, add a "cooldown override" or an "allow" rule on the package page.
+
+## Tests
+
+```sh
+go test ./...            # unit tests only
+test/integration.sh      # all Go tests with PostgreSQL, SeaweedFS, and Valkey
+test/e2e.sh              # pip and uv through the full stack (needs internet access)
+```
+
 ## Supported ecosystems
 
 | Version | Ecosystem                                              |
