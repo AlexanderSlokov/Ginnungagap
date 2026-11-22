@@ -1,0 +1,8 @@
+# Publishes the backing services on random local ports for the integration tests.
+services:
+  postgres:
+    ports: ["127.0.0.1::5432"]
+  seaweedfs:
+    ports: ["127.0.0.1::8333"]
+  valkey:
+    ports: ["127.0.0.1::6379"]

@@ -1,0 +1,552 @@
+package web
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/AlexanderSlokov/Ginnungagap/internal/auth"
+	"github.com/AlexanderSlokov/Ginnungagap/internal/store"
+)
+
+templ layout(title string, who *auth.Principal) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } · Ginnungagap</title>
+			<link rel="stylesheet" href="/static/style.css"/>
+			<script src="/static/htmx-2.0.11.min.js" defer></script>
+		</head>
+		<body hx-boost="true">
+			<header class="bar">
+				<a class="brand" href="/"><span class="mark">G</span>GINNUNGAGAP</a>
+				<span class="tag">PACKAGE PROXY · v0.1</span>
+				if who != nil {
+					<nav>
+						<a href="/">Repositories</a>
+						if who.Admin {
+							<a href="/accounts">Accounts</a>
+							<a href="/gc">Storage</a>
+						}
+						<form method="post" action="/logout" class="inline">
+							<button class="link" type="submit">{ who.Name } · Log out</button>
+						</form>
+					</nav>
+				}
+			</header>
+			<main>
+				{ children... }
+			</main>
+		</body>
+	</html>
+}
+
+templ section(code, title string) {
+	<section class="panel">
+		<h2><span class="code">{ code }</span>{ title }</h2>
+		{ children... }
+	</section>
+}
+
+templ errorPage(who *auth.Principal, code int, msg string) {
+	@layout("Error", who) {
+		@section(strconv.Itoa(code), "Request failed") {
+			<p class="alert alert-danger">{ msg }</p>
+			<p><a href="/">Back to the repositories</a></p>
+		}
+	}
+}
+
+templ loginPage(msg string) {
+	@layout("Log in", nil) {
+		<div class="narrow">
+			@section("00", "Log in") {
+				if msg != "" {
+					<p class="alert alert-danger">{ msg }</p>
+				}
+				<form method="post" action="/login" class="stack">
+					<label>Name <input name="name" autocomplete="username" required autofocus/></label>
+					<label>Password <input name="password" type="password" autocomplete="current-password" required/></label>
+					<button class="primary" type="submit">Log in</button>
+				</form>
+			}
+		</div>
+	}
+}
+
+templ dashboardPage(v dashboardView) {
+	@layout("Repositories", v.Who) {
+		<div class="stats">
+			<div class="stat"><span class="label">REPOSITORIES</span><span class="value">{ strconv.Itoa(len(v.Repos)) }</span></div>
+			<div class="stat"><span class="label">CACHED</span><span class="value">{ size(v.Total) }</span></div>
+			<div class="stat">
+				<span class="label">STORAGE LIMIT</span>
+				if v.Limit > 0 {
+					<span class="value">{ strconv.Itoa(usage(v.Total, v.Limit)) }%</span>
+					<span class="meter"><span style={ fmt.Sprintf("width:%d%%", usage(v.Total, v.Limit)) }></span></span>
+					<span class="hint">of { size(v.Limit) }</span>
+				} else {
+					<span class="value">NONE</span>
+					<span class="hint">Set GC_STORAGE_LIMIT</span>
+				}
+			</div>
+		</div>
+		@section("01", "Repositories") {
+			if v.Who.Admin {
+				<p><a class="button primary" href="/repos/new">+ New repository</a></p>
+			}
+			if len(v.Repos) == 0 {
+				<p class="muted">You have no role on a repository. Ask an administrator.</p>
+			} else {
+				<table>
+					<thead><tr><th>Name</th><th>Type</th><th>Upstream</th><th>Cooldown</th><th class="num">Packages</th><th class="num">Cached files</th><th class="num">Size</th><th>Your role</th></tr></thead>
+					<tbody>
+						for _, r := range v.Repos {
+							<tr>
+								<td><a class="strong" href={ templ.URL(repoPath(r.Name)) }>{ r.Name }</a></td>
+								<td><span class="badge">{ r.Type }</span></td>
+								<td class="mono small">
+									if r.Type == "proxy" {
+										{ r.UpstreamURL }
+									} else {
+										group
+									}
+								</td>
+								<td>{ strconv.Itoa(r.CooldownDays) } days</td>
+								<td class="num">{ itoa(r.Projects) }</td>
+								<td class="num">{ itoa(r.Cached) }</td>
+								<td class="num">{ size(r.Bytes) }</td>
+								<td>{ r.Role.String() }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+		}
+	}
+}
+
+templ newRepoPage(who *auth.Principal, msg string) {
+	@layout("New repository", who) {
+		<div class="narrow">
+			@section("01", "New repository") {
+				if msg != "" {
+					<p class="alert alert-danger">{ msg }</p>
+				}
+				<form method="post" action="/repos" class="stack">
+					<label>Name <input name="name" pattern="[a-z0-9][a-z0-9\-]*" required placeholder="pypi-internal"/></label>
+					<fieldset>
+						<legend>Type</legend>
+						<label class="row"><input type="radio" name="type" value="proxy" checked/> Proxy: one upstream index</label>
+						<label class="row"><input type="radio" name="type" value="group"/> Group: proxies in priority order</label>
+					</fieldset>
+					<label>Upstream URL (proxy) <input name="upstream" placeholder="https://pypi.org/simple"/></label>
+					<label>Members (group, comma-separated, highest priority first) <input name="members" placeholder="pypi, pytorch"/></label>
+					<label>Cooldown in days <input name="cooldown_days" type="number" min="0" value="14"/></label>
+					<button class="primary" type="submit">Create</button>
+				</form>
+			}
+		</div>
+	}
+}
+
+templ statusBadge(s string) {
+	<span class={ "badge badge-" + s }>{ s }</span>
+}
+
+templ repoPage(v repoView) {
+	@layout(v.Repo.Name, v.Who) {
+		<div class="title">
+			<h1>{ v.Repo.Name }</h1>
+			<span class="badge">{ v.Repo.Type }</span>
+			<span class="badge">cooldown { strconv.Itoa(v.Repo.CooldownDays) } d</span>
+			<span class="badge">role: { v.Role.String() }</span>
+		</div>
+		if v.Token != "" {
+			<div class="alert alert-accent">
+				<strong>New robot account.</strong> Copy the token now. Ginnungagap shows it one time only.
+				<pre>{ tokenSnippet(v.TokenFor, v.Token) }</pre>
+			</div>
+		}
+		@section("01", "Use this repository") {
+			<pre>{ usageSnippet(v.IndexURL) }</pre>
+			<p class="muted small">Give the credentials in the URL (https://USER:PASSWORD@host/...), or with UV_INDEX_GINNUNGAGAP_USERNAME and UV_INDEX_GINNUNGAGAP_PASSWORD. A robot account uses the user name { auth.RobotPrefix }NAME.</p>
+		}
+		@section("02", "Packages") {
+			<form method="get" class="inline-form">
+				<input name="q" value={ v.Query } placeholder="Filter packages"/>
+				<button type="submit">Filter</button>
+			</form>
+			if len(v.Packages) == 0 {
+				<p class="muted">No packages yet. A package appears here after the first request.</p>
+			} else {
+				<table>
+					<thead>
+						<tr>
+							<th>Package</th>
+							if v.Repo.Type == "group" {
+								<th>Route</th>
+							}
+							<th class="num">Files</th><th class="num">Cached</th><th class="num">Size</th><th>Last pull</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, p := range v.Packages {
+							<tr>
+								<td><a class="strong" href={ templ.URL(projectPath(v.Repo.Name, p.Name)) }>{ p.Name }</a></td>
+								if v.Repo.Type == "group" {
+									<td>
+										if p.Source == "" {
+											<span class="muted">not resolved</span>
+										} else {
+											{ p.Source }
+										}
+									</td>
+								}
+								<td class="num">{ itoa(p.Files) }</td>
+								<td class="num">{ itoa(p.Cached) }</td>
+								<td class="num">{ size(p.Bytes) }</td>
+								<td>{ ago(p.LastPull) }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+		}
+		if v.Repo.Type == "group" {
+			@section("03", "Members and routes") {
+				<p>Members in priority order:</p>
+				<ol class="members">
+					for _, m := range v.Members {
+						<li><a href={ templ.URL(repoPath(m.Name)) }>{ m.Name }</a> <span class="mono small muted">{ m.UpstreamURL }</span></li>
+					}
+				</ol>
+				<p class="muted small">A package name uses the first member that has it. Ginnungagap records that route and keeps it (ADR-0008). Set a route to select a member yourself.</p>
+				if v.Role >= store.RoleMaintainer {
+					<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/routes") } class="inline-form">
+						<input name="project" placeholder="package name" required/>
+						<select name="member">
+							for _, m := range v.Members {
+								<option value={ m.Name }>{ m.Name }</option>
+							}
+						</select>
+						<button type="submit">Set route</button>
+					</form>
+				}
+			}
+		}
+		@section("04", "Policies") {
+			if len(v.Policies) == 0 {
+				<p class="muted">No rules. Every file is visible after the cooldown.</p>
+			} else {
+				<table>
+					<thead><tr><th>Package</th><th>Version</th><th>Rule</th><th>Reason</th><th></th></tr></thead>
+					<tbody>
+						for _, p := range v.Policies {
+							<tr>
+								<td><a href={ templ.URL(projectPath(v.Repo.Name, p.Project)) }>{ p.Project }</a></td>
+								<td class="mono">
+									if p.Version == "" {
+										all
+									} else {
+										{ p.Version }
+									}
+								</td>
+								<td>@statusBadge(p.Kind)</td>
+								<td>{ p.Reason }</td>
+								<td>
+									if v.Role >= store.RoleMaintainer {
+										<form method="post" action={ templ.URL(fmt.Sprintf("%s/policies/%d/delete", repoPath(v.Repo.Name), p.ID)) } class="inline">
+											<button class="small" type="submit">Remove</button>
+										</form>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+			if v.Role >= store.RoleMaintainer {
+				<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/policies") } class="inline-form">
+					<input name="project" placeholder="package" required/>
+					<input name="version" placeholder="version (empty: all)"/>
+					<select name="kind">
+						<option value="block">block</option>
+						<option value="allow">allow</option>
+						<option value="cooldown_override">cooldown override</option>
+					</select>
+					<input name="reason" placeholder="reason"/>
+					<button type="submit">Add rule</button>
+				</form>
+			}
+		}
+		if v.Role >= store.RoleAdmin {
+			@section("05", "Settings") {
+				<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/settings") } class="stack">
+					<label>Cooldown in days <input name="cooldown_days" type="number" min="0" value={ strconv.Itoa(v.Repo.CooldownDays) }/></label>
+					if v.Repo.Type == "proxy" {
+						<label>Upstream URL <input name="upstream" value={ v.Repo.UpstreamURL } required/></label>
+					} else {
+						<label>Members (comma-separated, highest priority first) <input name="members" value={ memberList(v.Members) } required/></label>
+					}
+					<button class="primary" type="submit">Save</button>
+				</form>
+			}
+			@section("06", "Members") {
+				if len(v.Accounts) > 0 {
+					<table>
+						<thead><tr><th>Account</th><th>Role</th><th></th></tr></thead>
+						<tbody>
+							for _, m := range v.Accounts {
+								<tr>
+									<td>{ m.Name }</td>
+									<td>{ m.Role.String() }</td>
+									<td>
+										<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/members/" + m.Name + "/delete") } class="inline">
+											<button class="small" type="submit">Remove</button>
+										</form>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				}
+				<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/members") } class="inline-form">
+					<input name="account" placeholder="account name" required/>
+					@roleSelect([]store.Role{store.RoleGuest, store.RoleDeveloper, store.RoleMaintainer, store.RoleAdmin})
+					<button type="submit">Set role</button>
+				</form>
+			}
+			@section("07", "Robot accounts") {
+				if len(v.Robots) > 0 {
+					<table>
+						<thead><tr><th>User name</th><th>Role</th><th>Expires</th><th></th></tr></thead>
+						<tbody>
+							for _, b := range v.Robots {
+								<tr>
+									<td class="mono">{ auth.RobotPrefix }{ b.Name }</td>
+									<td>{ b.Role.String() }</td>
+									<td>{ day(b.Expires) }</td>
+									<td>
+										<form method="post" action={ templ.URL(fmt.Sprintf("%s/robots/%d/delete", repoPath(v.Repo.Name), b.ID)) } class="inline" hx-confirm="Delete this robot account?">
+											<button class="small" type="submit">Delete</button>
+										</form>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				}
+				<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/robots") } class="inline-form">
+					<input name="name" placeholder="robot name, for example ci" required/>
+					@roleSelect([]store.Role{store.RoleGuest, store.RoleDeveloper})
+					<label class="row">Valid for <input name="days" type="number" min="1" max="365" value="30" class="short"/> days</label>
+					<button type="submit">Create</button>
+				</form>
+			}
+		}
+	}
+}
+
+templ roleSelect(roles []store.Role) {
+	<select name="role">
+		for _, r := range roles {
+			<option value={ r.String() }>{ r.String() }</option>
+		}
+	</select>
+}
+
+templ projectPage(v projectView) {
+	@layout(v.Name, v.Who) {
+		<div class="title">
+			<a href={ templ.URL(repoPath(v.Repo.Name)) } class="crumb">{ v.Repo.Name } /</a>
+			<h1>{ v.Name }</h1>
+		</div>
+		@section("01", "Files") {
+			if len(v.Files) == 0 {
+				<p class="muted">Ginnungagap has no files of this package yet. Request the package once through the index.</p>
+			} else {
+				<table>
+					<thead><tr><th>File</th><th>Version</th><th>Released</th><th>Status</th><th>Cache</th><th class="num">Size</th><th>Last pull</th><th>Actions</th></tr></thead>
+					<tbody>
+						for _, f := range v.Files {
+							<tr class={ "status-" + string(f.Status) }>
+								<td class="mono small">{ f.Filename }</td>
+								<td class="mono">{ f.Version }</td>
+								<td class="nowrap">
+									if f.UploadTime != nil {
+										{ day(*f.UploadTime) }
+									} else {
+										<span title="The upstream gives no upload time. Ginnungagap uses the first-seen time.">{ day(f.FirstSeen) }*</span>
+									}
+								</td>
+								<td>
+									@statusBadge(string(f.Status))
+									if string(f.Status) == "cooldown" {
+										<span class="hint">until { day(f.AvailableAt) }</span>
+									}
+									if f.Yanked != nil {
+										<span class="badge badge-yanked" title={ *f.Yanked }>yanked</span>
+									}
+								</td>
+								<td>
+									if f.Cached {
+										<span class="badge badge-cached">cached</span>
+									}
+									if f.Pinned {
+										<span class="badge badge-pinned">pinned</span>
+									}
+									if f.MarkedAt != nil {
+										<span class="badge badge-marked">gc marked</span>
+									}
+								</td>
+								<td class="num">{ sizePtr(f.Size) }</td>
+								<td>{ ago(f.LastPull) }</td>
+								<td class="actions">
+									if v.Role >= store.RoleDeveloper {
+										<form method="post" action={ templ.URL(fmt.Sprintf("%s/files/%d/pin", repoPath(v.Repo.Name), f.ID)) } class="inline">
+											<input type="hidden" name="pinned" value={ strconv.FormatBool(!f.Pinned) }/>
+											<button class="small" type="submit">
+												if f.Pinned {
+													Unpin
+												} else {
+													Pin
+												}
+											</button>
+										</form>
+									}
+									if v.Role >= store.RoleMaintainer {
+										if f.Cached {
+											<form method="post" action={ templ.URL(fmt.Sprintf("%s/files/%d/purge", repoPath(v.Repo.Name), f.ID)) } class="inline" hx-confirm="Remove this file from the cache?">
+												<button class="small" type="submit">Purge</button>
+											</form>
+										}
+										@ruleButton(v, f.Version, "block", "Block version")
+										if string(f.Status) == "cooldown" {
+											@ruleButton(v, f.Version, "cooldown_override", "Override cooldown")
+										}
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+				<p class="muted small">* The upstream gives no upload time. The cooldown starts at the first-seen time (ADR-0008).</p>
+			}
+		}
+		if v.Role >= store.RoleDeveloper {
+			@section("02", "Pull history") {
+				if len(v.Pulls) == 0 {
+					<p class="muted">No pulls yet.</p>
+				} else {
+					<table>
+						<thead><tr><th>Time</th><th>File</th><th>By</th></tr></thead>
+						<tbody>
+							for _, p := range v.Pulls {
+								<tr><td>{ stamp(p.At) }</td><td class="mono small">{ p.File }</td><td>{ p.Who }</td></tr>
+							}
+						</tbody>
+					</table>
+				}
+			}
+		}
+	}
+}
+
+templ ruleButton(v projectView, version, kind, label string) {
+	<form method="post" action={ templ.URL(repoPath(v.Repo.Name) + "/policies") } class="inline">
+		<input type="hidden" name="project" value={ v.Name }/>
+		<input type="hidden" name="version" value={ version }/>
+		<input type="hidden" name="kind" value={ kind }/>
+		<input type="hidden" name="reason" value={ "from the UI by " + v.Who.Name }/>
+		<input type="hidden" name="return" value="project"/>
+		<button class={ "small " + kind } type="submit">{ label }</button>
+	</form>
+}
+
+templ accountsPage(who *auth.Principal, accounts []accountRow, msg string) {
+	@layout("Accounts", who) {
+		@section("01", "Accounts") {
+			<table>
+				<thead><tr><th>Name</th><th>System administrator</th><th>Created</th></tr></thead>
+				<tbody>
+					for _, a := range accounts {
+						<tr>
+							<td>{ a.Name }</td>
+							<td>
+								if a.Admin {
+									<span class="badge badge-allowed">yes</span>
+								}
+							</td>
+							<td>{ day(a.Created) }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		}
+		@section("02", "New account") {
+			if msg != "" {
+				<p class="alert alert-danger">{ msg }</p>
+			}
+			<form method="post" action="/accounts" class="inline-form">
+				<input name="name" placeholder="name" required/>
+				<input name="password" type="password" placeholder="password (12+ characters)" autocomplete="new-password" required/>
+				<label class="row"><input type="checkbox" name="admin"/> System administrator</label>
+				<button type="submit">Create</button>
+			</form>
+			<p class="muted small">Give the account a role on each repository from the repository page.</p>
+		}
+	}
+}
+
+templ gcPage(v gcView) {
+	@layout("Storage", v.Who) {
+		<div class="stats">
+			<div class="stat"><span class="label">CACHED</span><span class="value">{ size(v.Total) }</span></div>
+			<div class="stat"><span class="label">PINNED</span><span class="value">{ size(v.Pinned) }</span></div>
+			<div class="stat">
+				<span class="label">LIMIT</span>
+				if v.Limit > 0 {
+					<span class="value">{ size(v.Limit) }</span>
+					<span class="meter"><span style={ fmt.Sprintf("width:%d%%", usage(v.Total, v.Limit)) }></span></span>
+				} else {
+					<span class="value">NONE</span>
+				}
+			</div>
+		</div>
+		@section("01", "Garbage collection") {
+			<p>GC runs every hour in two steps (ADR-0005):</p>
+			<ol>
+				<li><strong>Mark.</strong> When the cache is larger than the limit, GC marks the files with the oldest last pull. It does not mark pinned files.</li>
+				<li><strong>Sweep.</strong> After 24 hours, GC removes the files that are still marked. A pull removes the mark.</li>
+			</ol>
+			if v.Queued {
+				<p class="alert alert-accent">The GC jobs are in the queue.</p>
+			}
+			<form method="post" action="/gc/run" class="inline">
+				<button class="primary" type="submit">Run GC now</button>
+			</form>
+		}
+		@section("02", "Marked files") {
+			if len(v.Marked) == 0 {
+				<p class="muted">No files are marked.</p>
+			} else {
+				<table>
+					<thead><tr><th>Repository</th><th>Package</th><th>File</th><th class="num">Size</th><th>Marked</th></tr></thead>
+					<tbody>
+						for _, m := range v.Marked {
+							<tr>
+								<td>{ m.Repo }</td>
+								<td><a href={ templ.URL(projectPath(m.Repo, m.Project)) }>{ m.Project }</a></td>
+								<td class="mono small">{ m.Filename }</td>
+								<td class="num">{ size(m.Size) }</td>
+								<td>{ stamp(m.MarkedAt) }</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			}
+		}
+	}
+}

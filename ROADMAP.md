@@ -18,15 +18,16 @@ Target version: `0.1.0`
 - PyPI pull-through proxy. The proxy gets an artifact only when a client requests it.
 - Extra upstream indexes, for example the PyTorch and CUDA wheel indexes.
 - Blob storage on any S3-compatible endpoint. The default stack uses SeaweedFS.
-- Metadata store in PostgreSQL.
-- Job queue in Valkey or Redis, as a separate service (ADR-0004).
+- Metadata store in PostgreSQL (ADR-0003).
+- Job queue in Valkey, as a separate service (ADR-0004).
 - Garbage collection in two steps: mark, then sweep (ADR-0005).
-- Cooldown: the proxy does not serve a version until it is older than a set age. An operator can override it for urgent fixes.
+- Cooldown (default 14 days) and upstream resolution that prevents dependency confusion (ADR-0008). A Maintainer can override the cooldown for urgent fixes.
 - Blocklist and allowlist for packages and versions.
 - Access control: repositories, fixed roles, and robot accounts (ADR-0001, section 3.6; ADR-0006).
 - Web UI for management tasks:
   see the cached packages and versions, see the storage size, see the pull history,
   remove or purge a version, and block a version (ADR-0007).
+  Long lists have pages of 10, 20, or 50 rows.
 - Deployment with Docker Compose.
 
 ### `0.2.0`: npm

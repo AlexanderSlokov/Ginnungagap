@@ -10,7 +10,7 @@ It also records the open design questions and the research for each question.
 |---------------|-----------------------------------------------------------------|
 | Proxy         | Receives requests from package clients (`pip`, `uv`, `npm`, `cargo`). Sends the cached artifact, or gets it from the upstream registry. |
 | Policy engine | Applies the cooldown, the blocklist, and the allowlist. Later, it applies the advisory check. |
-| Job queue     | Keeps the background jobs, for example garbage collection. It is Valkey or Redis, as a separate service. |
+| Job queue     | Keeps the background jobs, for example garbage collection. It is Valkey, as a separate service. |
 | Worker        | Takes jobs from the queue and runs them.                        |
 | Blob storage  | Keeps the artifact files. It is an S3-compatible endpoint. The default is SeaweedFS. |
 | Metadata store| Keeps the package index, the pull history, and the policy data. It is PostgreSQL. |
@@ -47,7 +47,7 @@ Do not keep metadata in the queue.
 
 ### 2.2 Metadata store (ADR-0003)
 
-**Status:** PostgreSQL is decided. The schema is open.
+**Status:** Decided in [ADR-0003](adr/0003-metadata-schema.md).
 
 **Research:**
 
@@ -60,7 +60,7 @@ Do not keep metadata in the queue.
 
 ### 2.3 Job queue (ADR-0004)
 
-**Status:** Valkey or Redis is decided. The final selection and the Go client library are open.
+**Status:** Decided in [ADR-0004](adr/0004-job-queue.md): Valkey and asynq.
 
 **Research:**
 
@@ -73,7 +73,7 @@ The BSD license gives the fewest limits to users who deploy the stack.
 
 ### 2.4 Garbage collection (ADR-0005)
 
-**Status:** The two-step method is decided. The mark rules and the schedule are open.
+**Status:** Decided in [ADR-0005](adr/0005-garbage-collection.md).
 
 The method:
 
@@ -90,7 +90,7 @@ The method:
 
 ### 2.5 Access control (ADR-0006)
 
-**Status:** Decided in [ADR-0001, section 3.6](adr/0001-rebuild-as-package-proxy.md#36-access-control). The role list is open.
+**Status:** Decided in [ADR-0001, section 3.6](adr/0001-rebuild-as-package-proxy.md#36-access-control) and [ADR-0006](adr/0006-access-control-roles.md).
 
 **Research (Nexus):**
 
@@ -124,7 +124,7 @@ The method:
 
 ### 2.6 Frontend (ADR-0007)
 
-**Status:** The design direction is decided. The technology and the color palette are open.
+**Status:** Decided in [ADR-0007](adr/0007-web-ui.md): templ, htmx, and the Nord palette (trial).
 
 **Requirements:**
 
@@ -144,7 +144,7 @@ All the UI code is in Go, and the result is one binary.
 
 ### 2.7 Cooldown
 
-**Status:** Decided in ADR-0001. The details are open.
+**Status:** Decided in [ADR-0008](adr/0008-pypi-upstream-and-cooldown.md). The default cooldown is 14 days.
 
 **Research:**
 
