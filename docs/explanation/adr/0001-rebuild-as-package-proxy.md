@@ -196,8 +196,9 @@ These items need a separate ADR or design document.
 | ID       | Topic                                   | Status  |
 |----------|-----------------------------------------|---------|
 | ADR-0002 | Pull in advance of container image tags | For `2.0.0`. Use Harbor as a reference. |
-| ADR-0003 | Metadata schema in PostgreSQL           | Research Nexus first. |
-| ADR-0004 | Job queue: Valkey or Redis, and the Go client library | Open. |
-| ADR-0005 | Garbage collection: mark rules and sweep schedule | Open. The two-step method is decided. |
-| ADR-0006 | Access control: role list and permissions for each role | The model is decided (refer to 3.6). The role list is open. |
-| ADR-0007 | Frontend technology, visual design, and color palette | Open. |
+| ADR-0003 | Metadata schema in PostgreSQL           | [Accepted](0003-metadata-schema.md). |
+| ADR-0004 | Job queue: Valkey or Redis, and the Go client library | [Accepted](0004-job-queue.md): Valkey and asynq. |
+| ADR-0005 | Garbage collection: mark rules and sweep schedule | [Accepted](0005-garbage-collection.md). |
+| ADR-0006 | Access control: role list and permissions for each role | [Accepted](0006-access-control-roles.md). |
+| ADR-0007 | Frontend technology, visual design, and color palette | [Accepted](0007-web-ui.md): templ, htmx, Nord (trial). |
+| ADR-0008 | PyPI upstream resolution and cooldown   | [Accepted](0008-pypi-upstream-and-cooldown.md). |

@@ -46,7 +46,7 @@ but it does not let you see or control what it keeps.
 - Backend and web UI: Go.
 - Blob storage: any S3-compatible endpoint. The default stack uses SeaweedFS.
 - Metadata: PostgreSQL.
-- Job queue: Valkey or Redis.
+- Job queue: Valkey.
 - Deployment: Docker Compose.
 
 ## Documentation
