@@ -64,7 +64,8 @@ table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 
 th { text-align: left; font: 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; border-bottom: var(--border); padding: 6px 8px; white-space: nowrap; }
 td { padding: 7px 8px; border-bottom: 1px solid var(--surface-2); vertical-align: middle; }
 tbody tr:hover { background: var(--surface); }
-.num { text-align: right; font-family: var(--mono); }
+.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+.nowrap { white-space: nowrap; }
 tr.status-blocked td:first-child, tr.status-removed td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
 tr.status-cooldown td:first-child { box-shadow: inset 4px 0 0 var(--warn); }
 .actions { white-space: nowrap; }

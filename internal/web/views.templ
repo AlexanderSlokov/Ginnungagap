@@ -166,18 +166,11 @@ templ repoPage(v repoView) {
 		if v.Token != "" {
 			<div class="alert alert-accent">
 				<strong>New robot account.</strong> Copy the token now. Ginnungagap shows it one time only.
-				<pre>user:  { v.TokenFor }
-token: { v.Token }</pre>
+				<pre>{ tokenSnippet(v.TokenFor, v.Token) }</pre>
 			</div>
 		}
 		@section("01", "Use this repository") {
-			<pre>pip install --index-url { v.IndexURL } PACKAGE
-
-# uv: pyproject.toml
-[[tool.uv.index]]
-name = "ginnungagap"
-url = "{ v.IndexURL }"
-default = true</pre>
+			<pre>{ usageSnippet(v.IndexURL) }</pre>
 			<p class="muted small">Give the credentials in the URL (https://USER:PASSWORD@host/...), or with UV_INDEX_GINNUNGAGAP_USERNAME and UV_INDEX_GINNUNGAGAP_PASSWORD. A robot account uses the user name { auth.RobotPrefix }NAME.</p>
 		}
 		@section("02", "Packages") {
@@ -381,7 +374,7 @@ templ projectPage(v projectView) {
 							<tr class={ "status-" + string(f.Status) }>
 								<td class="mono small">{ f.Filename }</td>
 								<td class="mono">{ f.Version }</td>
-								<td>
+								<td class="nowrap">
 									if f.UploadTime != nil {
 										{ day(*f.UploadTime) }
 									} else {

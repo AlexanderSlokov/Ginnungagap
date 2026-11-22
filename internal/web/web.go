@@ -637,8 +637,13 @@ func (u *UI) projectPage(w http.ResponseWriter, r *http.Request) {
 		}
 		v.Files = append(v.Files, fileRow{f, statuses[i], release.Add(cooldown)})
 	}
-	// Newest version first.
-	slices.Reverse(v.Files)
+	// Newest release first. A file name does not sort by version ("2.9" > "2.32").
+	slices.SortStableFunc(v.Files, func(a, b fileRow) int {
+		if c := b.AvailableAt.Compare(a.AvailableAt); c != 0 {
+			return c
+		}
+		return strings.Compare(b.Filename, a.Filename)
+	})
 	if rc.Role >= store.RoleDeveloper {
 		rows, _ := u.DB.Query(ctx, `SELECT pl.pulled_at, f.filename, coalesce(a.name, 'robot+' || rb.name, '?')
 			FROM pull_log pl JOIN file f ON f.id = pl.file_id
@@ -835,6 +840,16 @@ func ago(t *time.Time) string {
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+// templ removes line breaks in template text, so build the text of a <pre> block here.
+func usageSnippet(indexURL string) string {
+	return "pip install --index-url " + indexURL + " PACKAGE\n\n" +
+		"# uv: pyproject.toml\n[[tool.uv.index]]\nname = \"ginnungagap\"\nurl = \"" + indexURL + "\"\ndefault = true"
+}
+
+func tokenSnippet(user, token string) string {
+	return "user:  " + user + "\ntoken: " + token
+}
 
 func memberList(members []store.Repository) string {
 	names := make([]string, len(members))
