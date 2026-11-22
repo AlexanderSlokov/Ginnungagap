@@ -42,7 +42,7 @@ func TestRoundTrip(t *testing.T) {
 	if ok, err := s.Exists(ctx, sha); err != nil || !ok {
 		t.Fatalf("Exists = %v, %v", ok, err)
 	}
-	r, err := s.Get(ctx, sha)
+	r, _, err := s.Get(ctx, sha)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,6 +56,9 @@ func TestRoundTrip(t *testing.T) {
 	}
 	if ok, err := s.Exists(ctx, sha); err != nil || ok {
 		t.Fatalf("Exists after Delete = %v, %v", ok, err)
+	}
+	if _, _, err := s.Get(ctx, sha); !errors.Is(err, ErrNotExist) {
+		t.Fatalf("Get after Delete = %v, want ErrNotExist", err)
 	}
 }
 
@@ -79,7 +82,7 @@ func TestPutRejectsWrongDigest(t *testing.T) {
 func TestInvalidKey(t *testing.T) {
 	s := New(nil, "unused")
 	for _, k := range []string{"", "../etc/passwd", "ABCDEF", "sha256/" + string(make([]byte, 64))} {
-		if _, err := s.Get(context.Background(), k); err == nil {
+		if _, _, err := s.Get(context.Background(), k); err == nil {
 			t.Errorf("Get(%q) did not fail", k)
 		}
 	}

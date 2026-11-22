@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -16,6 +17,11 @@ type Config struct {
 	S3Bucket    string
 	S3UseTLS    bool
 	ValkeyAddr  string
+
+	// AdminPassword creates the account "admin" when the database has no account.
+	AdminPassword string
+	// StorageLimit in bytes for garbage collection (ADR-0005). 0 means no limit.
+	StorageLimit int64
 }
 
 // Load returns the configuration, or an error that names every missing variable.
@@ -47,8 +53,41 @@ func Load() (Config, error) {
 		}
 		c.S3UseTLS = b
 	}
+	c.AdminPassword = os.Getenv("GINNUNGAGAP_ADMIN_PASSWORD")
+	if v := os.Getenv("GC_STORAGE_LIMIT"); v != "" {
+		n, err := ParseSize(v)
+		if err != nil {
+			return c, fmt.Errorf("GC_STORAGE_LIMIT: %w", err)
+		}
+		c.StorageLimit = n
+	}
 	if len(missing) > 0 {
 		return c, fmt.Errorf("missing environment variables: %v", missing)
 	}
 	return c, nil
+}
+
+var units = []struct {
+	suffix string
+	n      int64
+}{
+	{"TiB", 1 << 40}, {"GiB", 1 << 30}, {"MiB", 1 << 20}, {"KiB", 1 << 10},
+	{"TB", 1e12}, {"GB", 1e9}, {"MB", 1e6}, {"KB", 1e3}, {"B", 1},
+}
+
+// ParseSize reads a size such as "200GiB", "50GB", or "1048576".
+func ParseSize(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	mult := int64(1)
+	for _, u := range units {
+		if strings.HasSuffix(s, u.suffix) {
+			s, mult = strings.TrimSpace(strings.TrimSuffix(s, u.suffix)), u.n
+			break
+		}
+	}
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil || n < 0 {
+		return 0, fmt.Errorf("invalid size %q", s)
+	}
+	return n * mult, nil
 }

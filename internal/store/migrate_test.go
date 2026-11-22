@@ -2,13 +2,14 @@ package store
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// The test needs an empty PostgreSQL database. Set TEST_DATABASE_URL.
+// The test needs a PostgreSQL database. Set TEST_DATABASE_URL.
 func TestMigrateTwice(t *testing.T) {
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
@@ -20,6 +21,7 @@ func TestMigrateTwice(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
+	db.Exec(ctx, `DROP SCHEMA public CASCADE; CREATE SCHEMA public`)
 
 	for i := range 2 {
 		if err := Migrate(ctx, db); err != nil {
@@ -30,7 +32,8 @@ func TestMigrateTwice(t *testing.T) {
 	if err := db.QueryRow(ctx, `SELECT count(*) FROM schema_migration`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
-	if n != 1 {
-		t.Fatalf("schema_migration has %d rows, want 1", n)
+	names, _ := fs.Glob(migrations, "migrations/*.sql")
+	if n != len(names) {
+		t.Fatalf("schema_migration has %d rows, want %d", n, len(names))
 	}
 }

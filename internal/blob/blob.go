@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 )
@@ -19,6 +20,9 @@ import (
 var ErrDigest = errors.New("blob: sha256 mismatch")
 
 var validKey = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+// partSize limits the memory of an upload with an unknown size (size -1).
+const partSize = 16 << 20
 
 type Store struct {
 	s3     *minio.Client
@@ -54,7 +58,7 @@ func (s *Store) Put(ctx context.Context, sha string, r io.Reader, size int64) er
 	tmp := "tmp/" + hex.EncodeToString(nonce[:])
 
 	h := sha256.New()
-	if _, err := s.s3.PutObject(ctx, s.bucket, tmp, io.TeeReader(r, h), size, minio.PutObjectOptions{}); err != nil {
+	if _, err := s.s3.PutObject(ctx, s.bucket, tmp, io.TeeReader(r, h), size, minio.PutObjectOptions{PartSize: partSize}); err != nil {
 		return err
 	}
 	defer s.s3.RemoveObject(context.WithoutCancel(ctx), s.bucket, tmp, minio.RemoveObjectOptions{})
@@ -68,13 +72,29 @@ func (s *Store) Put(ctx context.Context, sha string, r io.Reader, size int64) er
 	return err
 }
 
-// Get returns a stream of the blob. The caller must close it.
-func (s *Store) Get(ctx context.Context, sha string) (io.ReadCloser, error) {
+// ErrNotExist means that the blob is not in the bucket.
+var ErrNotExist = errors.New("blob: does not exist")
+
+// Get returns a seekable stream of the blob and its modification time.
+// The caller must close the stream.
+func (s *Store) Get(ctx context.Context, sha string) (io.ReadSeekCloser, time.Time, error) {
 	key, err := object(sha)
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, err
 	}
-	return s.s3.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	obj, err := s.s3.GetObject(ctx, s.bucket, key, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+	st, err := obj.Stat()
+	if err != nil {
+		obj.Close()
+		if minio.ToErrorResponse(err).Code == minio.NoSuchKey {
+			return nil, time.Time{}, ErrNotExist
+		}
+		return nil, time.Time{}, err
+	}
+	return obj, st.LastModified, nil
 }
 
 // Exists reports whether the blob sha is in the bucket.
