@@ -2,8 +2,8 @@
 
 | Field    | Value                          |
 |----------|--------------------------------|
-| Status   | Proposed                       |
-| Date     | 2026-11-21                     |
+| Status   | Accepted                       |
+| Date     | 2026-11-21 (proposed), 2026-11-22 (accepted) |
 | Decider  | Founder (`@AleksandrSlokov`)   |
 | Recorder | Claude (BA and secretary role) |
 
@@ -57,7 +57,8 @@ We build a new project with the same name: Ginnungagap.
 
 Ginnungagap is "a Sonatype Nexus, but free".
 It is a pull-through proxy and cache for software packages.
-It also does cache warmup.
+For packages, the proxy gets an artifact only when a client requests it (on demand), as Nexus does.
+For container images, an operator can also select a repository and tags to pull in advance, as Harbor does.
 In the future, it becomes a central logistics gateway for the software supply chain.
 This gateway supplies all the artifacts that a team needs to build a product.
 
@@ -68,7 +69,7 @@ This gateway supplies all the artifacts that a team needs to build a product.
 | `0.1.0` | PyPI proxy. This includes extra indexes, such as PyTorch and CUDA wheel indexes. |
 | `0.2.0` | npm proxy.                                               |
 | `0.3.0` | Cargo (crates.io) proxy.                                 |
-| `2.0.0` | Container image registry proxy (Docker / OCI).           |
+| `2.0.0` | Container image registry proxy (Docker / OCI). This includes pull in advance of selected tags. |
 | `3.0.0` | AI model registry proxy.                                 |
 
 The scope of `1.0.0` is not defined.
@@ -82,10 +83,10 @@ We define it after the MVP is complete.
 | Frontend        | Go server-side rendering. If this is not possible, a web UI that is embedded in the Go binary. |
 | Blob storage    | Any S3-compatible endpoint. The default Docker Compose stack uses SeaweedFS. |
 | Metadata store  | PostgreSQL.                                                              |
-| Job queue       | Yes. The queue runs background jobs. A follow-up ADR selects the implementation. |
-| Garbage collection | Yes. A follow-up ADR selects the policy.                              |
+| Job queue       | Valkey or Redis, as a separate service. The database keeps data. The queue keeps jobs. |
+| Garbage collection | Two steps, as Nexus does. First, mark the items in the database. Then, remove the files from blob storage. |
 | Deployment      | Docker Compose.                                                          |
-| Access control  | Role-based access control, similar to Harbor. A follow-up ADR gives the details. |
+| Access control  | Role-based access control. A combination of the Nexus and Harbor models. Refer to 3.6. |
 | License         | AGPL-3.0 (no change; the repository already uses it).                    |
 
 ### 3.4 Supply chain protection
@@ -110,6 +111,31 @@ The UI and the API must let an operator do these tasks:
 - Block a version.
 
 The UI must be clean and easy to use for daily work.
+The design direction is industrial, neo-brutalism, with the clean look of e-ink.
+A follow-up ADR selects the color palette.
+
+### 3.6 Access control
+
+We use a combination of the Nexus model and the Harbor model.
+
+- **Resource model (from Nexus).** The unit of access is the repository.
+  A repository has a format (PyPI, npm, Cargo, and later Docker) and a type (proxy or group).
+  One design supports all formats.
+- **Permission model (from Harbor).** Each member gets one fixed role on a repository or on a repository group.
+- **Robot accounts (from Harbor).** CI uses robot accounts.
+  A robot account cannot log in to the UI.
+  Its token expires.
+  The system shows the secret one time only.
+- **Directory groups (from Harbor).** The system can map OIDC groups to roles.
+
+We do not use these Nexus functions in the first releases:
+
+- Free-form privilege strings.
+- Content selectors.
+
+Reason: the Harbor permission model is simple to configure.
+The Project unit of Harbor is a container image concept.
+PyPI and crates.io have no namespace that matches a Harbor project.
 
 ## 4. Options that we considered
 
@@ -154,7 +180,7 @@ The UI must be clean and easy to use for daily work.
 - The proxy becomes a single point of failure for all builds.
 - The cooldown can stop urgent security fixes. The design must include an override.
 - Each package ecosystem has a different protocol. Each ecosystem needs its own adapter.
-- PostgreSQL adds one more service to operate.
+- PostgreSQL and the queue service add two more services to operate.
 
 ### 5.3 Required actions
 
@@ -169,9 +195,9 @@ These items need a separate ADR or design document.
 
 | ID       | Topic                                   | Status  |
 |----------|-----------------------------------------|---------|
-| ADR-0002 | Cache warmup: definition and mechanism  | Unknown. Research is necessary. |
+| ADR-0002 | Pull in advance of container image tags | For `2.0.0`. Use Harbor as a reference. |
 | ADR-0003 | Metadata schema in PostgreSQL           | Research Nexus first. |
-| ADR-0004 | Job queue implementation                | Open.   |
-| ADR-0005 | Garbage collection policy               | Unknown. |
-| ADR-0006 | Access control model                    | Use Harbor as a reference. |
-| ADR-0007 | Frontend technology                     | Open.   |
+| ADR-0004 | Job queue: Valkey or Redis, and the Go client library | Open. |
+| ADR-0005 | Garbage collection: mark rules and sweep schedule | Open. The two-step method is decided. |
+| ADR-0006 | Access control: role list and permissions for each role | The model is decided (refer to 3.6). The role list is open. |
+| ADR-0007 | Frontend technology, visual design, and color palette | Open. |
