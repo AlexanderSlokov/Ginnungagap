@@ -27,6 +27,7 @@ Target version: `0.1.0`
 - Web UI for management tasks:
   see the cached packages and versions, see the storage size, see the pull history,
   remove or purge a version, and block a version (ADR-0007).
+  Long lists have pages of 10, 20, or 50 rows.
 - Deployment with Docker Compose.
 
 ### `0.2.0`: npm
